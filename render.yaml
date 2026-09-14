@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: appbets
+    runtime: node
+    plan: starter
+    buildCommand: cd Frontend && npm install && npm run build && cd ../Backend && npm install
+    startCommand: node Backend/index.js
+    disk:
+      name: appbets-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: DB_PATH
+        value: /var/data/appbets.db
+      - key: NODE_VERSION
+        value: 20
