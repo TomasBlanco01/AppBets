@@ -3,6 +3,7 @@ const fs = require('fs');
 const express = require('express');
 const cors = require('cors');
 
+const { ready } = require('./db/connection');
 const pagesRoutes = require('./routes/pages');
 const movementsRoutes = require('./routes/movements');
 const betsRoutes = require('./routes/bets');
@@ -39,6 +40,13 @@ if (fs.existsSync(FRONTEND_DIST)) {
 }
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Servidor corriendo en puerto ${PORT}`);
-});
+ready
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`Servidor corriendo en puerto ${PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.error('No se pudo iniciar el servidor:', err);
+    process.exit(1);
+  });

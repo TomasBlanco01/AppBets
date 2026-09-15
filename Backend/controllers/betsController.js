@@ -1,4 +1,4 @@
-const db = require('../db/connection');
+const { all, get, run } = require('../db/helpers');
 
 const isValidAmount = (amount) => Number.isFinite(amount) && amount > 0;
 const isValidOdds = (odds) => Number.isFinite(odds) && odds >= 1;
@@ -17,16 +17,16 @@ const rowToBet = (row) => ({
   specialOptions: row.specialOptions ? row.specialOptions.split(',').filter(Boolean) : [],
 });
 
-const getBets = (req, res) => {
+const getBets = async (req, res) => {
   try {
-    const bets = db.prepare(`
+    const bets = await all(`
       SELECT bets.*, pages.name AS pageName, tipsters.name AS tipsterName, sports.name AS sportName
       FROM bets
       LEFT JOIN pages ON pages.id = bets.pageId
       LEFT JOIN tipsters ON tipsters.id = bets.tipsterId
       LEFT JOIN sports ON sports.id = bets.sportId
       ORDER BY bets.date DESC, bets.id DESC
-    `).all();
+    `);
     res.json(bets.map(b => rowToBet({ ...b, pageName: b.pageName || 'Eliminada' })));
   } catch (error) {
     console.error(error);
@@ -34,7 +34,7 @@ const getBets = (req, res) => {
   }
 };
 
-const createBet = (req, res) => {
+const createBet = async (req, res) => {
   try {
     const { date, description, tipsterId, pageId, sportId, specialOptions, stakePct, amount, odds } = req.body;
 
@@ -53,7 +53,7 @@ const createBet = (req, res) => {
     }
 
     const parsedPageId = parseInt(pageId);
-    const pageExists = db.prepare('SELECT id FROM pages WHERE id = ?').get(parsedPageId);
+    const pageExists = await get('SELECT id FROM pages WHERE id = ?', [parsedPageId]);
     if (!pageExists) {
       return res.status(400).json({ message: 'La página no existe' });
     }
@@ -61,7 +61,7 @@ const createBet = (req, res) => {
     let parsedTipsterId = null;
     if (tipsterId !== undefined && tipsterId !== null && tipsterId !== '') {
       parsedTipsterId = parseInt(tipsterId);
-      const tipsterExists = db.prepare('SELECT id FROM tipsters WHERE id = ?').get(parsedTipsterId);
+      const tipsterExists = await get('SELECT id FROM tipsters WHERE id = ?', [parsedTipsterId]);
       if (!tipsterExists) {
         return res.status(400).json({ message: 'La persona no existe' });
       }
@@ -70,7 +70,7 @@ const createBet = (req, res) => {
     let parsedSportId = null;
     if (sportId !== undefined && sportId !== null && sportId !== '') {
       parsedSportId = parseInt(sportId);
-      const sportExists = db.prepare('SELECT id FROM sports WHERE id = ?').get(parsedSportId);
+      const sportExists = await get('SELECT id FROM sports WHERE id = ?', [parsedSportId]);
       if (!sportExists) {
         return res.status(400).json({ message: 'El deporte no existe' });
       }
@@ -83,9 +83,10 @@ const createBet = (req, res) => {
 
     const parsedStakePct = stakePct !== undefined && stakePct !== '' ? parseFloat(stakePct) : null;
 
-    const result = db.prepare(
-      'INSERT INTO bets (date, description, tipsterId, pageId, sportId, specialOptions, stakePct, amount, odds, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
-    ).run(date, description.trim(), parsedTipsterId, parsedPageId, parsedSportId, parsedOptions.value.join(','), parsedStakePct, parsedAmount, parsedOdds, 'pending');
+    const result = await run(
+      'INSERT INTO bets (date, description, tipsterId, pageId, sportId, specialOptions, stakePct, amount, odds, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [date, description.trim(), parsedTipsterId, parsedPageId, parsedSportId, parsedOptions.value.join(','), parsedStakePct, parsedAmount, parsedOdds, 'pending']
+    );
 
     const newBet = {
       id: result.lastInsertRowid,
@@ -107,10 +108,10 @@ const createBet = (req, res) => {
   }
 };
 
-const updateBet = (req, res) => {
+const updateBet = async (req, res) => {
   try {
     const betId = parseInt(req.params.id);
-    const existing = db.prepare('SELECT * FROM bets WHERE id = ?').get(betId);
+    const existing = await get('SELECT * FROM bets WHERE id = ?', [betId]);
 
     if (!existing) {
       return res.status(404).json({ message: 'Apuesta no encontrada' });
@@ -135,7 +136,7 @@ const updateBet = (req, res) => {
         updated.tipsterId = null;
       } else {
         const parsedTipsterId = parseInt(tipsterId);
-        const tipsterExists = db.prepare('SELECT id FROM tipsters WHERE id = ?').get(parsedTipsterId);
+        const tipsterExists = await get('SELECT id FROM tipsters WHERE id = ?', [parsedTipsterId]);
         if (!tipsterExists) return res.status(400).json({ message: 'La persona no existe' });
         updated.tipsterId = parsedTipsterId;
       }
@@ -143,7 +144,7 @@ const updateBet = (req, res) => {
 
     if (pageId !== undefined) {
       const parsedPageId = parseInt(pageId);
-      const pageExists = db.prepare('SELECT id FROM pages WHERE id = ?').get(parsedPageId);
+      const pageExists = await get('SELECT id FROM pages WHERE id = ?', [parsedPageId]);
       if (!pageExists) return res.status(400).json({ message: 'La página no existe' });
       updated.pageId = parsedPageId;
     }
@@ -153,7 +154,7 @@ const updateBet = (req, res) => {
         updated.sportId = null;
       } else {
         const parsedSportId = parseInt(sportId);
-        const sportExists = db.prepare('SELECT id FROM sports WHERE id = ?').get(parsedSportId);
+        const sportExists = await get('SELECT id FROM sports WHERE id = ?', [parsedSportId]);
         if (!sportExists) return res.status(400).json({ message: 'El deporte no existe' });
         updated.sportId = parsedSportId;
       }
@@ -196,9 +197,10 @@ const updateBet = (req, res) => {
       }
     }
 
-    db.prepare(
-      'UPDATE bets SET date = ?, description = ?, tipsterId = ?, pageId = ?, sportId = ?, specialOptions = ?, stakePct = ?, amount = ?, odds = ?, status = ?, cashoutAmount = ? WHERE id = ?'
-    ).run(updated.date, updated.description, updated.tipsterId, updated.pageId, updated.sportId, updated.specialOptions, updated.stakePct, updated.amount, updated.odds, updated.status, updated.cashoutAmount, betId);
+    await run(
+      'UPDATE bets SET date = ?, description = ?, tipsterId = ?, pageId = ?, sportId = ?, specialOptions = ?, stakePct = ?, amount = ?, odds = ?, status = ?, cashoutAmount = ? WHERE id = ?',
+      [updated.date, updated.description, updated.tipsterId, updated.pageId, updated.sportId, updated.specialOptions, updated.stakePct, updated.amount, updated.odds, updated.status, updated.cashoutAmount, betId]
+    );
 
     res.json(rowToBet({ id: betId, ...updated }));
   } catch (error) {
@@ -207,16 +209,16 @@ const updateBet = (req, res) => {
   }
 };
 
-const deleteBet = (req, res) => {
+const deleteBet = async (req, res) => {
   try {
     const betId = parseInt(req.params.id);
-    const existing = db.prepare('SELECT * FROM bets WHERE id = ?').get(betId);
+    const existing = await get('SELECT * FROM bets WHERE id = ?', [betId]);
 
     if (!existing) {
       return res.status(404).json({ message: 'Apuesta no encontrada' });
     }
 
-    db.prepare('DELETE FROM bets WHERE id = ?').run(betId);
+    await run('DELETE FROM bets WHERE id = ?', [betId]);
 
     res.json({ message: 'Apuesta eliminada', bet: existing });
   } catch (error) {

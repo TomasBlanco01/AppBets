@@ -1,8 +1,8 @@
-const db = require('../db/connection');
+const { all, get, run } = require('../db/helpers');
 
-const getSports = (req, res) => {
+const getSports = async (req, res) => {
   try {
-    const sports = db.prepare('SELECT * FROM sports ORDER BY name').all();
+    const sports = await all('SELECT * FROM sports ORDER BY name');
     res.json(sports);
   } catch (error) {
     console.error(error);
@@ -10,7 +10,7 @@ const getSports = (req, res) => {
   }
 };
 
-const createSport = (req, res) => {
+const createSport = async (req, res) => {
   try {
     const { name } = req.body;
     if (!name || name.trim() === '') {
@@ -18,12 +18,12 @@ const createSport = (req, res) => {
     }
 
     const trimmedName = name.trim();
-    const existing = db.prepare('SELECT id FROM sports WHERE name = ?').get(trimmedName);
+    const existing = await get('SELECT id FROM sports WHERE name = ?', [trimmedName]);
     if (existing) {
       return res.status(400).json({ message: 'Ya existe un deporte con ese nombre' });
     }
 
-    const result = db.prepare('INSERT INTO sports (name) VALUES (?)').run(trimmedName);
+    const result = await run('INSERT INTO sports (name) VALUES (?)', [trimmedName]);
     res.status(201).json({ id: result.lastInsertRowid, name: trimmedName });
   } catch (error) {
     console.error(error);
@@ -31,16 +31,16 @@ const createSport = (req, res) => {
   }
 };
 
-const deleteSport = (req, res) => {
+const deleteSport = async (req, res) => {
   try {
     const sportId = parseInt(req.params.id);
-    const sport = db.prepare('SELECT * FROM sports WHERE id = ?').get(sportId);
+    const sport = await get('SELECT * FROM sports WHERE id = ?', [sportId]);
 
     if (!sport) {
       return res.status(404).json({ message: 'Deporte no encontrado' });
     }
 
-    db.prepare('DELETE FROM sports WHERE id = ?').run(sportId);
+    await run('DELETE FROM sports WHERE id = ?', [sportId]);
 
     res.json({ message: 'Deporte eliminado', sport });
   } catch (error) {

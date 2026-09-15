@@ -1,8 +1,8 @@
-const db = require('../db/connection');
+const { all, get, run } = require('../db/helpers');
 
-const getBankroll = (req, res) => {
+const getBankroll = async (req, res) => {
   try {
-    const row = db.prepare('SELECT amount, date FROM bankroll_history ORDER BY date DESC, id DESC LIMIT 1').get();
+    const row = await get('SELECT amount, date FROM bankroll_history ORDER BY date DESC, id DESC LIMIT 1');
     res.json(row ? { amount: row.amount, date: row.date } : { amount: 0, date: null });
   } catch (error) {
     console.error(error);
@@ -10,9 +10,9 @@ const getBankroll = (req, res) => {
   }
 };
 
-const getBankrollHistory = (req, res) => {
+const getBankrollHistory = async (req, res) => {
   try {
-    const rows = db.prepare('SELECT * FROM bankroll_history ORDER BY date ASC, id ASC').all();
+    const rows = await all('SELECT * FROM bankroll_history ORDER BY date ASC, id ASC');
     res.json(rows);
   } catch (error) {
     console.error(error);
@@ -20,7 +20,7 @@ const getBankrollHistory = (req, res) => {
   }
 };
 
-const addBankrollEntry = (req, res) => {
+const addBankrollEntry = async (req, res) => {
   try {
     const { amount, date } = req.body;
     const parsedAmount = parseFloat(amount);
@@ -30,7 +30,7 @@ const addBankrollEntry = (req, res) => {
 
     const entryDate = date || new Date().toISOString().slice(0, 10);
 
-    const result = db.prepare('INSERT INTO bankroll_history (date, amount) VALUES (?, ?)').run(entryDate, parsedAmount);
+    const result = await run('INSERT INTO bankroll_history (date, amount) VALUES (?, ?)', [entryDate, parsedAmount]);
     res.status(201).json({ id: result.lastInsertRowid, date: entryDate, amount: parsedAmount });
   } catch (error) {
     console.error(error);

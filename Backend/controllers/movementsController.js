@@ -1,8 +1,8 @@
-const db = require('../db/connection');
+const { all, get, run } = require('../db/helpers');
 
 const isValidAmount = (amount) => Number.isFinite(amount) && amount > 0;
 
-const getMovements = (req, res) => {
+const getMovements = async (req, res) => {
   try {
     const { pageId } = req.query;
 
@@ -20,7 +20,7 @@ const getMovements = (req, res) => {
 
     query += ' ORDER BY movements.date DESC, movements.id DESC';
 
-    const movements = db.prepare(query).all(...params);
+    const movements = await all(query, params);
     res.json(movements.map(m => ({ ...m, pageName: m.pageName || 'Eliminada' })));
   } catch (error) {
     console.error(error);
@@ -28,7 +28,7 @@ const getMovements = (req, res) => {
   }
 };
 
-const createMovement = (req, res) => {
+const createMovement = async (req, res) => {
   try {
     const { pageId, type, amount, date, note } = req.body;
 
@@ -46,14 +46,15 @@ const createMovement = (req, res) => {
     }
 
     const parsedPageId = parseInt(pageId);
-    const pageExists = db.prepare('SELECT id FROM pages WHERE id = ?').get(parsedPageId);
+    const pageExists = await get('SELECT id FROM pages WHERE id = ?', [parsedPageId]);
     if (!pageExists) {
       return res.status(400).json({ message: 'La página no existe' });
     }
 
-    const result = db.prepare(
-      'INSERT INTO movements (pageId, type, amount, date, note) VALUES (?, ?, ?, ?, ?)'
-    ).run(parsedPageId, type, parsedAmount, date, note || '');
+    const result = await run(
+      'INSERT INTO movements (pageId, type, amount, date, note) VALUES (?, ?, ?, ?, ?)',
+      [parsedPageId, type, parsedAmount, date, note || '']
+    );
 
     const newMovement = { id: result.lastInsertRowid, pageId: parsedPageId, type, amount: parsedAmount, date, note: note || '' };
     res.status(201).json(newMovement);
@@ -63,10 +64,10 @@ const createMovement = (req, res) => {
   }
 };
 
-const updateMovement = (req, res) => {
+const updateMovement = async (req, res) => {
   try {
     const movementId = parseInt(req.params.id);
-    const existing = db.prepare('SELECT * FROM movements WHERE id = ?').get(movementId);
+    const existing = await get('SELECT * FROM movements WHERE id = ?', [movementId]);
 
     if (!existing) {
       return res.status(404).json({ message: 'Movimiento no encontrado' });
@@ -84,7 +85,7 @@ const updateMovement = (req, res) => {
 
     if (pageId !== undefined) {
       const parsedPageId = parseInt(pageId);
-      const pageExists = db.prepare('SELECT id FROM pages WHERE id = ?').get(parsedPageId);
+      const pageExists = await get('SELECT id FROM pages WHERE id = ?', [parsedPageId]);
       if (!pageExists) {
         return res.status(400).json({ message: 'La página no existe' });
       }
@@ -117,9 +118,10 @@ const updateMovement = (req, res) => {
       updated.note = note;
     }
 
-    db.prepare(
-      'UPDATE movements SET pageId = ?, type = ?, amount = ?, date = ?, note = ? WHERE id = ?'
-    ).run(updated.pageId, updated.type, updated.amount, updated.date, updated.note, movementId);
+    await run(
+      'UPDATE movements SET pageId = ?, type = ?, amount = ?, date = ?, note = ? WHERE id = ?',
+      [updated.pageId, updated.type, updated.amount, updated.date, updated.note, movementId]
+    );
 
     res.json({ id: movementId, ...updated });
   } catch (error) {
@@ -128,16 +130,16 @@ const updateMovement = (req, res) => {
   }
 };
 
-const deleteMovement = (req, res) => {
+const deleteMovement = async (req, res) => {
   try {
     const movementId = parseInt(req.params.id);
-    const existing = db.prepare('SELECT * FROM movements WHERE id = ?').get(movementId);
+    const existing = await get('SELECT * FROM movements WHERE id = ?', [movementId]);
 
     if (!existing) {
       return res.status(404).json({ message: 'Movimiento no encontrado' });
     }
 
-    db.prepare('DELETE FROM movements WHERE id = ?').run(movementId);
+    await run('DELETE FROM movements WHERE id = ?', [movementId]);
 
     res.json({ message: 'Movimiento eliminado', movement: existing });
   } catch (error) {

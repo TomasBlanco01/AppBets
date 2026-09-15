@@ -1,8 +1,8 @@
-const db = require('../db/connection');
+const { all, get, run } = require('../db/helpers');
 
-const getTipsters = (req, res) => {
+const getTipsters = async (req, res) => {
   try {
-    const tipsters = db.prepare('SELECT * FROM tipsters ORDER BY name').all();
+    const tipsters = await all('SELECT * FROM tipsters ORDER BY name');
     res.json(tipsters);
   } catch (error) {
     console.error(error);
@@ -10,7 +10,7 @@ const getTipsters = (req, res) => {
   }
 };
 
-const createTipster = (req, res) => {
+const createTipster = async (req, res) => {
   try {
     const { name } = req.body;
     if (!name || name.trim() === '') {
@@ -18,12 +18,12 @@ const createTipster = (req, res) => {
     }
 
     const trimmedName = name.trim();
-    const existing = db.prepare('SELECT id FROM tipsters WHERE name = ?').get(trimmedName);
+    const existing = await get('SELECT id FROM tipsters WHERE name = ?', [trimmedName]);
     if (existing) {
       return res.status(400).json({ message: 'Ya existe una persona con ese nombre' });
     }
 
-    const result = db.prepare('INSERT INTO tipsters (name) VALUES (?)').run(trimmedName);
+    const result = await run('INSERT INTO tipsters (name) VALUES (?)', [trimmedName]);
     res.status(201).json({ id: result.lastInsertRowid, name: trimmedName });
   } catch (error) {
     console.error(error);
@@ -31,16 +31,16 @@ const createTipster = (req, res) => {
   }
 };
 
-const deleteTipster = (req, res) => {
+const deleteTipster = async (req, res) => {
   try {
     const tipsterId = parseInt(req.params.id);
-    const tipster = db.prepare('SELECT * FROM tipsters WHERE id = ?').get(tipsterId);
+    const tipster = await get('SELECT * FROM tipsters WHERE id = ?', [tipsterId]);
 
     if (!tipster) {
       return res.status(404).json({ message: 'Persona no encontrada' });
     }
 
-    db.prepare('DELETE FROM tipsters WHERE id = ?').run(tipsterId);
+    await run('DELETE FROM tipsters WHERE id = ?', [tipsterId]);
 
     res.json({ message: 'Persona eliminada', tipster });
   } catch (error) {

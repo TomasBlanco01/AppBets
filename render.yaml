@@ -2,15 +2,13 @@ services:
   - type: web
     name: appbets
     runtime: node
-    plan: starter
+    plan: free
     buildCommand: cd Frontend && npm install && npm run build && cd ../Backend && npm install
     startCommand: node Backend/index.js
-    disk:
-      name: appbets-data
-      mountPath: /var/data
-      sizeGB: 1
     envVars:
-      - key: DB_PATH
-        value: /var/data/appbets.db
       - key: NODE_VERSION
         value: 20
+      - key: TURSO_DATABASE_URL
+        sync: false
+      - key: TURSO_AUTH_TOKEN
+        sync: false

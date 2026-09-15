@@ -1,8 +1,8 @@
-const db = require('../db/connection');
+const { all, get, run } = require('../db/helpers');
 
-const getPages = (req, res) => {
+const getPages = async (req, res) => {
   try {
-    const pages = db.prepare('SELECT * FROM pages ORDER BY id').all();
+    const pages = await all('SELECT * FROM pages ORDER BY id');
     res.json(pages);
   } catch (error) {
     console.error(error);
@@ -10,7 +10,7 @@ const getPages = (req, res) => {
   }
 };
 
-const createPage = (req, res) => {
+const createPage = async (req, res) => {
   try {
     const { name } = req.body;
     if (!name || name.trim() === '') {
@@ -18,12 +18,12 @@ const createPage = (req, res) => {
     }
 
     const trimmedName = name.trim();
-    const existing = db.prepare('SELECT id FROM pages WHERE name = ?').get(trimmedName);
+    const existing = await get('SELECT id FROM pages WHERE name = ?', [trimmedName]);
     if (existing) {
       return res.status(400).json({ message: 'Ya existe una página con ese nombre' });
     }
 
-    const result = db.prepare('INSERT INTO pages (name) VALUES (?)').run(trimmedName);
+    const result = await run('INSERT INTO pages (name) VALUES (?)', [trimmedName]);
     res.status(201).json({ id: result.lastInsertRowid, name: trimmedName });
   } catch (error) {
     console.error(error);
@@ -31,16 +31,16 @@ const createPage = (req, res) => {
   }
 };
 
-const deletePage = (req, res) => {
+const deletePage = async (req, res) => {
   try {
     const pageId = parseInt(req.params.id);
-    const page = db.prepare('SELECT * FROM pages WHERE id = ?').get(pageId);
+    const page = await get('SELECT * FROM pages WHERE id = ?', [pageId]);
 
     if (!page) {
       return res.status(404).json({ message: 'Página no encontrada' });
     }
 
-    db.prepare('DELETE FROM pages WHERE id = ?').run(pageId);
+    await run('DELETE FROM pages WHERE id = ?', [pageId]);
 
     res.json({ message: 'Página eliminada', page });
   } catch (error) {
