@@ -16,6 +16,10 @@ const exportRoutes = require('./routes/export');
 
 const app = express();
 
+// Render corre la app detrás de un proxy: sin esto, req.ip sería la IP
+// interna del proxy y el rate-limit de login no distinguiría clientes.
+app.set('trust proxy', 1);
+
 app.use(cors());
 app.use(express.json());
 
