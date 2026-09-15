@@ -3,12 +3,15 @@ import React from 'react'
 import HomeScreen from './components/HomeScreen'
 import BankView from './components/BankView'
 import BetsView from './components/BetsView'
+import Login from './components/Login'
 import { Typography, Container, Box, Avatar, Button, IconButton, Tooltip } from "@mui/material";
 import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import LogoutIcon from '@mui/icons-material/Logout';
 import exportService from './services/export';
+import authService from './services/auth';
 import '@fontsource/roboto/300.css';
 import '@fontsource/roboto/400.css';
 import '@fontsource/roboto/500.css';
@@ -71,6 +74,11 @@ const SECTION_SUBTITLES = {
 
 const App = () => {
   const [view, setView] = useState('home');
+  const [authed, setAuthed] = useState(authService.isAuthenticated());
+
+  if (!authed) {
+    return <Login onSuccess={() => setAuthed(true)} />;
+  }
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
@@ -87,9 +95,17 @@ const App = () => {
           <Tooltip title="Exportar backup (.json)">
             <IconButton
               onClick={() => exportService.downloadBackup()}
-              sx={{ position: 'absolute', top: 0, right: 16, color: 'text.secondary' }}
+              sx={{ position: 'absolute', top: 0, right: 56, color: 'text.secondary' }}
             >
               <FileDownloadIcon />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Cerrar sesión">
+            <IconButton
+              onClick={() => authService.logout()}
+              sx={{ position: 'absolute', top: 0, right: 16, color: 'text.secondary' }}
+            >
+              <LogoutIcon />
             </IconButton>
           </Tooltip>
           <Box

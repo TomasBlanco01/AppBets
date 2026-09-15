@@ -4,6 +4,8 @@ const express = require('express');
 const cors = require('cors');
 
 const { ready } = require('./db/connection');
+const { requireAuth } = require('./middleware/auth');
+const authRoutes = require('./routes/auth');
 const pagesRoutes = require('./routes/pages');
 const movementsRoutes = require('./routes/movements');
 const betsRoutes = require('./routes/bets');
@@ -17,13 +19,15 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.use('/api/pages', pagesRoutes);
-app.use('/api/movements', movementsRoutes);
-app.use('/api/bets', betsRoutes);
-app.use('/api/tipsters', tipstersRoutes);
-app.use('/api/bankroll', bankrollRoutes);
-app.use('/api/sports', sportsRoutes);
-app.use('/api/export', exportRoutes);
+app.use('/api/auth', authRoutes);
+
+app.use('/api/pages', requireAuth, pagesRoutes);
+app.use('/api/movements', requireAuth, movementsRoutes);
+app.use('/api/bets', requireAuth, betsRoutes);
+app.use('/api/tipsters', requireAuth, tipstersRoutes);
+app.use('/api/bankroll', requireAuth, bankrollRoutes);
+app.use('/api/sports', requireAuth, sportsRoutes);
+app.use('/api/export', requireAuth, exportRoutes);
 
 // En producción, el frontend ya compilado (Frontend/dist) se sirve desde este
 // mismo servidor: una sola app, una sola URL, sin CORS entre front y back.
