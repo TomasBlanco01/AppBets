@@ -3,7 +3,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableRow, TableContainer,
   Paper, Container, Box, Typography, Chip, Pagination, IconButton, Tooltip,
   Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField,
-  FormControl, InputLabel, Select, MenuItem, Grid
+  FormControl, InputLabel, Select, MenuItem, Grid, useMediaQuery
 } from '@mui/material';
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from '@mui/icons-material/Edit';
@@ -11,7 +11,7 @@ import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import ArrowCircleDownIcon from '@mui/icons-material/ArrowCircleDown';
 import ArrowCircleUpIcon from '@mui/icons-material/ArrowCircleUp';
-import { PageAvatar } from '../App';
+import PageAvatar from './PageAvatar';
 
   const formatMoney = (n) => {
     return `$${Math.abs(n).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -39,6 +39,7 @@ const MovementList = ({ movements, pages, updateMovement, deleteMovement, select
   const [editAmount, setEditAmount] = useState('');
   const [editDate, setEditDate] = useState('');
   const [editNote, setEditNote] = useState('');
+  const isMobile = useMediaQuery('(max-width:600px)');
   const movsPorPagina = 8;
 
   const filteredMovements = useMemo(() => {
@@ -104,9 +105,9 @@ const MovementList = ({ movements, pages, updateMovement, deleteMovement, select
   };
 
   return (
-    <Container maxWidth="xl" sx={{ mb: 3 }}>
-      <Paper sx={{ p: 2.5, overflow: 'hidden' }}>
-        <Box sx={{ overflowX: 'auto' }}>
+    <Container id="movimientos" maxWidth="xl" sx={{ mb: 3 }}>
+      <Paper sx={{ p: { xs: 1.5, sm: 2.5 }, overflow: 'hidden' }}>
+        <Box>
           <Typography variant="h6" align="center" sx={{ mb: 2, fontWeight: 700, color: 'primary.main' }}>
             <ReceiptLongIcon sx={{ fontSize: 24, verticalAlign: 'middle', mr: 0.5 }} /> Movimientos {selectedPageName !== 'General' ? `- ${selectedPageName}` : ''}
           </Typography>
@@ -176,8 +177,27 @@ const MovementList = ({ movements, pages, updateMovement, deleteMovement, select
             </Typography>
           ) : (
             <>
-              <TableContainer component={Paper} elevation={0} sx={{ borderRadius: 2, overflow: 'hidden', bgcolor: 'transparent', border: '1px solid #2a3a4a' }}>
-              <Table size="small">
+              {isMobile && (
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ display: 'block', textAlign: 'center', mb: 1 }}
+                >
+                  Deslizá la tabla hacia los costados para ver todas las columnas →
+                </Typography>
+              )}
+              <TableContainer
+                component={Paper}
+                elevation={0}
+                sx={{
+                  borderRadius: 2,
+                  overflowX: 'auto',
+                  WebkitOverflowScrolling: 'touch',
+                  bgcolor: 'transparent',
+                  border: '1px solid #2a3a4a',
+                }}
+              >
+              <Table size="small" sx={{ minWidth: 760, '& .MuiTableCell-root': { whiteSpace: 'nowrap' } }}>
                 <TableHead>
                   <TableRow>
                     <TableCell align="center">Fecha</TableCell>

@@ -10,7 +10,7 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "Backend para AppBets - control de finanzas de apuestas",
+  "description": "Backend para Ges.Eco - gestión financiera personal",
   "dependencies": {
     "@libsql/client": "^0.18.0",
     "cors": "^2.8.5",

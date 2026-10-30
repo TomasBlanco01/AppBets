@@ -1,53 +1,15 @@
 import {
-  Container, Grid, Divider, Paper, Box, Typography
+  Container, Grid, Divider
 } from '@mui/material';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
+import StatCard from './StatCard';
 
 const formatMoney = (n) => {
   const sign = n < 0 ? '-$' : '$';
   return `${sign}${Math.abs(n).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 };
-
-const StatCard = ({ icon, label, value, subLabel, color, gradient }) => (
-  <Grid size={{ xs: 12, sm: 4 }}>
-    <Paper
-      sx={{
-        p: 2.5,
-        textAlign: 'center',
-        background: gradient,
-        border: 'none',
-        position: 'relative',
-        overflow: 'hidden',
-        '&::before': {
-          content: '""',
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          height: '3px',
-          background: color === 'success' ? 'linear-gradient(90deg, #00e676, #69f0ae)' :
-                     color === 'error' ? 'linear-gradient(90deg, #ff1744, #ff5252)' :
-                     'linear-gradient(90deg, #ffd740, #ffe57f)',
-        },
-      }}
-    >
-      <Box sx={{ color: `${color}.main`, mb: 0.5 }}>{icon}</Box>
-      <Typography variant="caption" color="text.secondary" sx={{ letterSpacing: '0.5px', textTransform: 'uppercase', fontWeight: 700 }}>
-        {label}
-      </Typography>
-      <Typography variant="h5" fontWeight={900} color={`${color}.main`} sx={{ mt: 0.5 }}>
-        {value}
-      </Typography>
-      {subLabel && (
-        <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-          {subLabel}
-        </Typography>
-      )}
-    </Paper>
-  </Grid>
-);
 
 const Dashboard = ({ movements }) => {
   const totalDeposits = movements.filter(m => m.type === 'deposit').reduce((sum, m) => sum + m.amount, 0);

@@ -33,7 +33,7 @@ const Login = ({ onSuccess }) => {
         >
           <LockIcon sx={{ fontSize: 40, color: 'primary.main', mb: 1 }} />
           <Typography variant="h6" fontWeight={800} sx={{ mb: 2 }}>
-            AppBets
+            Ges.Eco
           </Typography>
           <TextField
             type="password"

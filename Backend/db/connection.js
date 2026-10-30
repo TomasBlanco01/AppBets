@@ -27,6 +27,18 @@ async function createTables() {
         date TEXT NOT NULL,
         note TEXT NOT NULL DEFAULT ''
       )`,
+      `CREATE TABLE IF NOT EXISTS io_movements (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        type TEXT NOT NULL CHECK(type IN ('income', 'expense')),
+        amount REAL NOT NULL CHECK(amount > 0),
+        date TEXT NOT NULL,
+        note TEXT NOT NULL DEFAULT '',
+        category TEXT NOT NULL DEFAULT 'Otros'
+      )`,
+      `CREATE TABLE IF NOT EXISTS io_budgets (
+        category TEXT PRIMARY KEY,
+        amount REAL NOT NULL CHECK(amount > 0)
+      )`,
       `CREATE TABLE IF NOT EXISTS tipsters (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL UNIQUE
@@ -187,8 +199,27 @@ async function migrateBetsAddCashoutAmount() {
   console.log('Migrado bets: agregado cashoutAmount y estado cashed_out.');
 }
 
+// Migración única: I/O incorpora categorías para agrupar ingresos y gastos.
+async function migrateIOAddCategory() {
+  const columns = await client.execute('PRAGMA table_info(io_movements)');
+  const hasCategoryColumn = columns.rows.some((c) => c.name === 'category');
+  if (hasCategoryColumn) return;
+
+  await client.execute("ALTER TABLE io_movements ADD COLUMN category TEXT NOT NULL DEFAULT 'Otros'");
+  await client.execute(`
+    UPDATE io_movements
+    SET category = CASE type
+      WHEN 'income' THEN 'Otros ingresos'
+      ELSE 'Otros gastos'
+    END
+    WHERE category = 'Otros'
+  `);
+  console.log('Migrado io_movements: agregada categoría.');
+}
+
 async function migrate() {
   await createTables();
+  await migrateIOAddCategory();
   await migrateTipsterColumnToRelation();
   await migrateDropBetType();
   await migrateBetsAddSportAndHalfStatuses();

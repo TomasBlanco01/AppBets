@@ -9,9 +9,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       manifest: {
-        name: 'AppBets - Control Financiero',
-        short_name: 'AppBets',
-        description: 'Control financiero de apuestas deportivas: banca y seguimiento de apuestas.',
+        name: 'Ges.Eco - Gestión Financiera',
+        short_name: 'Ges.Eco',
+        description: 'Gestión financiera personal: ingresos, gastos, bets y balances.',
         theme_color: '#0f1923',
         background_color: '#0f1923',
         display: 'standalone',

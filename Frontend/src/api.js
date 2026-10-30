@@ -1,6 +1,16 @@
 import axios from 'axios';
 
-export const TOKEN_KEY = 'appbets_token';
+export const TOKEN_KEY = 'geseco_token';
+const LEGACY_TOKEN_KEY = 'appbets_token';
+
+// Conserva la sesión de la versión anterior al renombrar la app.
+if (!localStorage.getItem(TOKEN_KEY)) {
+  const legacyToken = localStorage.getItem(LEGACY_TOKEN_KEY);
+  if (legacyToken) {
+    localStorage.setItem(TOKEN_KEY, legacyToken);
+    localStorage.removeItem(LEGACY_TOKEN_KEY);
+  }
+}
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || '/api',

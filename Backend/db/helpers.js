@@ -23,4 +23,7 @@ const run = async (sql, args = []) => {
   };
 };
 
-module.exports = { all, get, run };
+// Ejecuta varias sentencias en una sola transacción de escritura.
+const batch = async (statements, mode = 'write') => client.batch(statements, mode);
+
+module.exports = { all, get, run, batch };

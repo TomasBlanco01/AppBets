@@ -9,7 +9,7 @@ const downloadBackup = async () => {
   const link = document.createElement('a');
   const today = new Date().toISOString().slice(0, 10);
   link.href = url;
-  link.download = `appbets-backup-${today}.json`;
+  link.download = `geseco-backup-${today}.json`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);

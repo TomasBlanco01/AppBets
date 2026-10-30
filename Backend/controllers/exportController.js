@@ -4,13 +4,15 @@ const { all } = require('../db/helpers');
 // backup/migración: no depende de Turso ni de su ubicación.
 const exportData = async (req, res) => {
   try {
-    const [pages, tipsters, sports, movements, bets, bankrollHistory] = await Promise.all([
+    const [pages, tipsters, sports, movements, bets, bankrollHistory, ioMovements, ioBudgets] = await Promise.all([
       all('SELECT * FROM pages ORDER BY id'),
       all('SELECT * FROM tipsters ORDER BY id'),
       all('SELECT * FROM sports ORDER BY id'),
       all('SELECT * FROM movements ORDER BY id'),
       all('SELECT * FROM bets ORDER BY id'),
       all('SELECT * FROM bankroll_history ORDER BY id'),
+      all('SELECT * FROM io_movements ORDER BY id'),
+      all('SELECT * FROM io_budgets ORDER BY category'),
     ]);
 
     res.json({
@@ -21,6 +23,8 @@ const exportData = async (req, res) => {
       movements,
       bets,
       bankrollHistory,
+      ioMovements,
+      ioBudgets,
     });
   } catch (error) {
     console.error(error);

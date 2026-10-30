@@ -8,7 +8,7 @@ import AddIcon from "@mui/icons-material/Add";
 import SendIcon from "@mui/icons-material/Send";
 import ArrowCircleDownIcon from '@mui/icons-material/ArrowCircleDown';
 import ArrowCircleUpIcon from '@mui/icons-material/ArrowCircleUp';
-import { PageAvatar } from '../App';
+import PageAvatar from './PageAvatar';
 
 const getArgentinaDate = () => {
   const now = new Date();
@@ -201,7 +201,7 @@ const CreateMovement = ({ pages, addMovement, addPage, defaultPageId }) => {
       </Paper>
 
       <Dialog open={openNewPage} onClose={() => setOpenNewPage(false)}>
-        <DialogTitle sx={{ fontWeight: 700 }}>Nueva Página de Apuestas</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 700 }}>Nueva Página</DialogTitle>
         <DialogContent>
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1, minWidth: 300 }}>
             <TextField

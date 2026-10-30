@@ -1,6 +1,6 @@
 import { Container, Grid, Paper, Box, Typography } from '@mui/material';
-import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
-import TrackChangesIcon from '@mui/icons-material/TrackChanges';
+import MoneyIcon from '@mui/icons-material/Money';
+import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 
 const HomeCard = ({ icon, title, description, onClick }) => (
   <Grid size={{ xs: 12, sm: 6 }}>
@@ -8,6 +8,7 @@ const HomeCard = ({ icon, title, description, onClick }) => (
       onClick={onClick}
       sx={{
         p: 4,
+        height: '100%',
         textAlign: 'center',
         cursor: 'pointer',
         bgcolor: 'rgba(15,25,35,0.6)',
@@ -36,16 +37,16 @@ const HomeScreen = ({ onSelect }) => {
     <Container maxWidth="md" sx={{ mt: 6 }}>
       <Grid container spacing={3}>
         <HomeCard
-          icon={<AccountBalanceIcon sx={{ fontSize: 56 }} />}
-          title="🏦 Banca"
+          icon={<MoneyIcon sx={{ fontSize: 56 }} />}
+          title="Bets"
           description="Depósitos y retiros por casa: balances, beneficio y movimientos."
-          onClick={() => onSelect('bank')}
+          onClick={() => onSelect('bets')}
         />
         <HomeCard
-          icon={<TrackChangesIcon sx={{ fontSize: 56 }} />}
-          title="🎯 Apuestas"
-          description="Registrá tus pronósticos, marcá ganadas/perdidas y seguí tu ROI."
-          onClick={() => onSelect('bets')}
+          icon={<SwapHorizIcon sx={{ fontSize: 56 }} />}
+          title="I/O"
+          description="Ingresos y gastos personales: registrá cada movimiento y seguí tu balance."
+          onClick={() => onSelect('io')}
         />
       </Grid>
     </Container>
