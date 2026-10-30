@@ -32,14 +32,23 @@ const App = () => {
   }
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
+    <Box
+      sx={{
+        minHeight: '100vh',
+        bgcolor: 'background.default',
+        pb: 'env(safe-area-inset-bottom, 0px)',
+      }}
+    >
       <Box
         sx={{
           background: 'linear-gradient(135deg, #0a1929 0%, #1a2332 50%, #0d2137 100%)',
           borderBottom: '2px solid',
           borderColor: 'primary.main',
           pb: 1,
-          pt: 2,
+          // En iPhone instalado como PWA el contenido arranca debajo de la
+          // barra de estado/Dynamic Island; sumamos ese espacio para que el
+          // navbar y los botones queden siempre accesibles.
+          pt: 'calc(env(safe-area-inset-top, 0px) + 16px)',
         }}
       >
         <Container maxWidth="xl" sx={{ position: 'relative' }}>
