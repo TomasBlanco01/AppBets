@@ -14,17 +14,15 @@ import CurrencyExchangeIcon from '@mui/icons-material/CurrencyExchange';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import PageAvatar from './PageAvatar';
 import PageDetailDialog from './PageDetailDialog';
-
-const formatMoney = (n) => {
-  const sign = n < 0 ? '-$' : '$';
-  return `${sign}${Math.abs(n).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-};
+import { useCurrency } from '../context/currency';
+import { totalsByPage as computeTotalsByPage } from '../utils/finance';
 
 const BetsView = () => {
   const [pages, setPages] = useState(loadCachedPages);
   const [selectedPageId, setSelectedPageId] = useState(null);
   const [detailPageId, setDetailPageId] = useState(null);
   const isMobile = useMediaQuery('(max-width:600px)');
+  const { amountOf, format: formatMoney } = useCurrency();
 
   const {
     items: rawMovements,
@@ -74,17 +72,10 @@ const BetsView = () => {
       });
   };
 
-  const totalsByPage = useMemo(() => {
-    return pages.map(page => {
-      const pageMovs = movements.filter(m => m.pageId === page.id);
-      const deposits = pageMovs.filter(m => m.type === 'deposit').reduce((sum, m) => sum + m.amount, 0);
-      const withdrawals = pageMovs.filter(m => m.type === 'withdrawal').reduce((sum, m) => sum + m.amount, 0);
-      const balance = deposits - withdrawals;
-      const profit = withdrawals - deposits;
-      const lastDate = pageMovs.reduce((latest, m) => (m.date > latest ? m.date : latest), '') || null;
-      return { ...page, deposits, withdrawals, balance, profit, movementCount: pageMovs.length, lastDate };
-    }).filter(p => p.deposits > 0 || p.withdrawals > 0);
-  }, [pages, movements]);
+  const totalsByPage = useMemo(
+    () => computeTotalsByPage(pages, movements, amountOf),
+    [pages, movements, amountOf]
+  );
 
   const detailPage = useMemo(
     () => totalsByPage.find(p => p.id === detailPageId) || null,

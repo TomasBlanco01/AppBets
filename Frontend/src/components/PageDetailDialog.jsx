@@ -4,11 +4,7 @@ import {
 } from '@mui/material';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import PageAvatar from './PageAvatar';
-
-const formatMoney = (n) => {
-  const sign = n < 0 ? '-$' : '$';
-  return `${sign}${Math.abs(n).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-};
+import { useCurrency } from '../context/currency';
 
 const formatDate = (dateStr) => {
   const d = new Date(dateStr + 'T00:00:00');
@@ -45,6 +41,7 @@ const StatBox = ({ label, value, color }) => (
 );
 
 const PageDetailDialog = ({ page, open, onClose, onViewMovements }) => {
+  const { format: formatMoney } = useCurrency();
   if (!page) return null;
 
   return (

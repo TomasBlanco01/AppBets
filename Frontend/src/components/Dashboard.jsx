@@ -5,15 +5,13 @@ import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import StatCard from './StatCard';
-
-const formatMoney = (n) => {
-  const sign = n < 0 ? '-$' : '$';
-  return `${sign}${Math.abs(n).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-};
+import { useCurrency } from '../context/currency';
+import { sumByType } from '../utils/finance';
 
 const Dashboard = ({ movements }) => {
-  const totalDeposits = movements.filter(m => m.type === 'deposit').reduce((sum, m) => sum + m.amount, 0);
-  const totalWithdrawals = movements.filter(m => m.type === 'withdrawal').reduce((sum, m) => sum + m.amount, 0);
+  const { amountOf, format: formatMoney } = useCurrency();
+  const totalDeposits = sumByType(movements, 'deposit', amountOf);
+  const totalWithdrawals = sumByType(movements, 'withdrawal', amountOf);
   const totalProfit = totalWithdrawals - totalDeposits;
 
   return (

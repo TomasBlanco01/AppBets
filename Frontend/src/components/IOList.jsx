@@ -12,10 +12,10 @@ import FilterListIcon from '@mui/icons-material/FilterList';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import { IO_CATEGORIES, ALL_IO_CATEGORIES, DEFAULT_IO_CATEGORY } from '../constants/ioCategories';
+import { formatMoney as formatArs } from '../utils/money';
 
-const formatMoney = (n) => {
-  return `$${Math.abs(n).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-};
+// Los montos de cada movimiento se muestran siempre en pesos (como se cargaron).
+const formatMoney = (n) => formatArs(Math.abs(n));
 
 const formatDate = (dateStr) => {
   const d = new Date(dateStr + 'T00:00:00');

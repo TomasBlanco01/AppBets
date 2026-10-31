@@ -3,15 +3,13 @@ import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import StatCard from './StatCard';
-
-const formatMoney = (n) => {
-  const sign = n < 0 ? '-$' : '$';
-  return `${sign}${Math.abs(n).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-};
+import { useCurrency } from '../context/currency';
+import { sumByType } from '../utils/finance';
 
 const IODashboard = ({ movements }) => {
-  const totalIncome = movements.filter(m => m.type === 'income').reduce((sum, m) => sum + m.amount, 0);
-  const totalExpenses = movements.filter(m => m.type === 'expense').reduce((sum, m) => sum + m.amount, 0);
+  const { amountOf, format: formatMoney } = useCurrency();
+  const totalIncome = sumByType(movements, 'income', amountOf);
+  const totalExpenses = sumByType(movements, 'expense', amountOf);
   const balance = totalIncome - totalExpenses;
 
   return (

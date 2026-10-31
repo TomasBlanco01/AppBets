@@ -1,6 +1,8 @@
 import { useState, lazy, Suspense } from 'react'
 import HomeScreen from './components/HomeScreen'
 import Login from './components/Login'
+import CurrencyProvider from './components/CurrencyProvider'
+import CurrencyToggle from './components/CurrencyToggle'
 import { Typography, Container, Box, Button, IconButton, Tooltip, CircularProgress } from "@mui/material";
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -33,6 +35,7 @@ const App = () => {
   }
 
   return (
+    <CurrencyProvider>
     <Box
       sx={{
         minHeight: '100vh',
@@ -112,15 +115,16 @@ const App = () => {
       </Box>
 
       {view !== 'home' && (
-        <Container maxWidth="xl" sx={{ mt: 2 }}>
+        <Container maxWidth="xl" sx={{ mt: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
           <Button
             size="small"
             startIcon={<ArrowBackIcon />}
             onClick={() => setView('home')}
-            sx={{ color: 'text.secondary' }}
+            sx={{ color: 'text.secondary', flexShrink: 0 }}
           >
             Inicio
           </Button>
+          <CurrencyToggle />
         </Container>
       )}
 
@@ -136,6 +140,7 @@ const App = () => {
         {view === 'io' && <IOView />}
       </Suspense>
     </Box>
+    </CurrencyProvider>
   );
 };
 

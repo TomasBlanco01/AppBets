@@ -8,6 +8,7 @@ const pagesRoutes = require('./routes/pages');
 const movementsRoutes = require('./routes/movements');
 const ioRoutes = require('./routes/io');
 const exportRoutes = require('./routes/export');
+const fxRoutes = require('./routes/fx');
 
 // Solo la API. La usan tanto el servidor local (index.js) como la función
 // serverless de Vercel (api/index.js en la raíz del repo).
@@ -26,6 +27,9 @@ app.get('/health', (req, res) => {
   res.set('Cache-Control', 'no-store');
   res.json({ status: 'ok', service: 'geseco', timestamp: new Date().toISOString() });
 });
+
+// Cotizaciones públicas del dólar: no necesitan sesión ni base de datos.
+app.use('/api/fx', fxRoutes);
 
 // En serverless no hay un arranque previo donde migrar la base: la primera
 // petición de cada instancia espera a que las tablas estén listas.
