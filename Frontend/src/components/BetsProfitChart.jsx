@@ -49,6 +49,8 @@ const BetsProfitChart = ({ movements, title }) => {
                 || index % Math.ceil(points.length / (isMobile ? 4 : 8)) === 0,
             }]}
             yAxis={[{
+              // El ancho se ajusta a las etiquetas ("US$ 1,2k" es más largo que "$1,2M").
+              width: 'auto',
               valueFormatter: (value) => formatCompact(value),
               tickLabelStyle: { fill: '#9aa0a6', fontSize: 11 },
             }]}
@@ -57,14 +59,15 @@ const BetsProfitChart = ({ movements, title }) => {
               label: 'Beneficio acumulado',
               color,
               area: true,
+              curve: 'linear',
               showMark: points.length <= 30,
               valueFormatter: (value) => formatMoney(Number(value) || 0),
             }]}
             grid={{ horizontal: true }}
-            margin={{ top: 16, right: isMobile ? 12 : 24, bottom: 10, left: isMobile ? 54 : 72 }}
+            margin={{ top: 16, right: isMobile ? 12 : 24, bottom: 10, left: 4 }}
             hideLegend
             sx={{
-              '& .MuiAreaElement-root': { fillOpacity: 0.12 },
+              '& .MuiLineChart-area': { fillOpacity: 0.15 },
               '& .MuiChartsGrid-line': { stroke: '#2a3a4a' },
               '& .MuiChartsAxis-line, & .MuiChartsAxis-tick': { stroke: '#2a3a4a' },
             }}

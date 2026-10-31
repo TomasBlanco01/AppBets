@@ -66,6 +66,8 @@ const IOMonthlyChart = ({ movements }) => {
                 tickLabelStyle: { fill: '#9aa0a6', fontSize: isMobile ? 11 : 12 },
               }]}
               yAxis={[{
+                // El ancho se ajusta a las etiquetas ("US$ 1,2k" es más largo que "$1,2M").
+                width: 'auto',
                 valueFormatter: (value) => formatCompactMoney(value),
                 tickLabelStyle: { fill: '#9aa0a6', fontSize: 11 },
               }]}
@@ -88,7 +90,7 @@ const IOMonthlyChart = ({ movements }) => {
                 top: 50,
                 right: isMobile ? 12 : 24,
                 bottom: 10,
-                left: isMobile ? 54 : 72,
+                left: 4,
               }}
               slotProps={{
                 legend: {
