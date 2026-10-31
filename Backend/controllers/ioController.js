@@ -1,4 +1,4 @@
-const { all, get, run, batch } = require('../db/helpers');
+const { all, get, run } = require('../db/helpers');
 
 const VALID_TYPES = ['income', 'expense'];
 const DEFAULT_CATEGORY = {
@@ -213,79 +213,9 @@ const deleteIOMovement = async (req, res) => {
   }
 };
 
-const parseBudgetsPayload = (body) => {
-  if (!Array.isArray(body?.budgets)) {
-    return { error: 'budgets debe ser un array' };
-  }
-
-  const seen = new Set();
-  const budgets = [];
-
-  for (const item of body.budgets) {
-    const category = typeof item?.category === 'string' ? item.category.trim() : '';
-    if (!category) {
-      return { error: 'Cada presupuesto debe tener una categoría' };
-    }
-
-    const normalizedCategory = category.slice(0, 60);
-    if (seen.has(normalizedCategory)) {
-      return { error: `Categoría duplicada: ${normalizedCategory}` };
-    }
-    seen.add(normalizedCategory);
-
-    const amount = parseFloat(item.amount);
-    if (!isValidAmount(amount)) {
-      return { error: `El presupuesto de ${normalizedCategory} debe ser mayor a 0` };
-    }
-
-    budgets.push({ category: normalizedCategory, amount });
-  }
-
-  return { budgets };
-};
-
-const getIOBudgets = async (req, res) => {
-  try {
-    const budgets = await all('SELECT category, amount FROM io_budgets ORDER BY category COLLATE NOCASE');
-    res.json(budgets);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Error al obtener presupuestos I/O' });
-  }
-};
-
-// Reemplaza todos los presupuestos de una sola vez: el frontend envía la
-// configuración completa y acá se guarda de forma atómica.
-const saveIOBudgets = async (req, res) => {
-  try {
-    const parsed = parseBudgetsPayload(req.body);
-    if (parsed.error) {
-      return res.status(400).json({ message: parsed.error });
-    }
-
-    const statements = ['DELETE FROM io_budgets'];
-    parsed.budgets.forEach((budget) => {
-      statements.push({
-        sql: 'INSERT INTO io_budgets (category, amount) VALUES (?, ?)',
-        args: [budget.category, budget.amount],
-      });
-    });
-
-    await batch(statements, 'write');
-
-    const budgets = await all('SELECT category, amount FROM io_budgets ORDER BY category COLLATE NOCASE');
-    res.json(budgets);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Error al guardar presupuestos I/O' });
-  }
-};
-
 module.exports = {
   getIOMovements,
   createIOMovement,
   updateIOMovement,
   deleteIOMovement,
-  getIOBudgets,
-  saveIOBudgets,
 };

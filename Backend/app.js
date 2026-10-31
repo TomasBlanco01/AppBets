@@ -6,11 +6,7 @@ const { requireAuth } = require('./middleware/auth');
 const authRoutes = require('./routes/auth');
 const pagesRoutes = require('./routes/pages');
 const movementsRoutes = require('./routes/movements');
-const betsRoutes = require('./routes/bets');
 const ioRoutes = require('./routes/io');
-const tipstersRoutes = require('./routes/tipsters');
-const bankrollRoutes = require('./routes/bankroll');
-const sportsRoutes = require('./routes/sports');
 const exportRoutes = require('./routes/export');
 
 // Solo la API. La usan tanto el servidor local (index.js) como la función
@@ -42,11 +38,7 @@ app.use('/api/auth', authRoutes);
 
 app.use('/api/pages', requireAuth, pagesRoutes);
 app.use('/api/movements', requireAuth, movementsRoutes);
-app.use('/api/bets', requireAuth, betsRoutes);
 app.use('/api/io', requireAuth, ioRoutes);
-app.use('/api/tipsters', requireAuth, tipstersRoutes);
-app.use('/api/bankroll', requireAuth, bankrollRoutes);
-app.use('/api/sports', requireAuth, sportsRoutes);
 app.use('/api/export', requireAuth, exportRoutes);
 
 module.exports = app;

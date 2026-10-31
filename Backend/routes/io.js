@@ -4,14 +4,10 @@ const {
   createIOMovement,
   updateIOMovement,
   deleteIOMovement,
-  getIOBudgets,
-  saveIOBudgets,
 } = require('../controllers/ioController');
 
 const router = express.Router();
 
-router.get('/budgets', getIOBudgets);
-router.put('/budgets', saveIOBudgets);
 router.get('/', getIOMovements);
 router.post('/', createIOMovement);
 router.put('/:id', updateIOMovement);
