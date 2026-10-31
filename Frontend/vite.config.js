@@ -39,5 +39,16 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist', // 👈 Render busca esta carpeta
+    rollupOptions: {
+      output: {
+        // React y MUI cambian poco entre deploys: en chunks separados el
+        // navegador los conserva y solo vuelve a bajar el código de la app.
+        manualChunks(id) {
+          if (!id.includes('node_modules') || id.includes('@mui/x-charts')) return;
+          if (/node_modules[\\/](react|react-dom|scheduler)[\\/]/.test(id)) return 'react';
+          if (/node_modules[\\/](@mui[\\/](material|system|utils|styled-engine|private-theming|core-downloads-tracker)|@emotion)[\\/]/.test(id)) return 'mui';
+        },
+      },
+    },
   },
 })

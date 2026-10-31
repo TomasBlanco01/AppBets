@@ -1,10 +1,9 @@
-import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback, lazy, Suspense } from 'react';
 import ioService from '../services/io';
 import IODashboard from './IODashboard';
-import IOMonthlyChart from './IOMonthlyChart';
 import CreateIO from './CreateIO';
 import IOList from './IOList';
-import { Container, Divider, Alert, Button } from '@mui/material';
+import { Container, Divider, Alert, Button, Box } from '@mui/material';
 import {
   loadCachedMovements,
   saveCachedMovements,
@@ -16,6 +15,9 @@ import {
   hasMovementChanges,
   createClientId,
 } from '../services/ioOffline';
+
+// @mui/x-charts es la dependencia más pesada: se descarga recién al abrir I/O.
+const IOMonthlyChart = lazy(() => import('./IOMonthlyChart'));
 
 const IOView = () => {
   const [movements, setMovements] = useState(() => mergePendingMovements(loadCachedMovements()));
@@ -320,7 +322,10 @@ const IOView = () => {
       )}
 
       <IODashboard movements={sortedMovements} />
-      <IOMonthlyChart movements={sortedMovements} />
+      {/* Reserva el alto del gráfico para que el formulario no salte al cargarlo */}
+      <Suspense fallback={<Box sx={{ minHeight: { xs: 330, sm: 410 }, mb: 3 }} />}>
+        <IOMonthlyChart movements={sortedMovements} />
+      </Suspense>
       <CreateIO addMovement={addMovement} />
       <Container maxWidth="xl">
         <Divider sx={{ borderColor: '#2a3a4a', my: 3 }} />

@@ -60,6 +60,11 @@ if (fs.existsSync(FRONTEND_DIST)) {
       }
     },
   }));
+  // Un bundle que ya no existe (de un deploy anterior) debe dar 404, no el
+  // index.html: así el frontend detecta el error y recarga la versión nueva.
+  app.use('/assets', (req, res) => {
+    res.status(404).end();
+  });
   app.use((req, res) => {
     res.set('Cache-Control', 'no-cache');
     res.sendFile(path.join(FRONTEND_DIST, 'index.html'));

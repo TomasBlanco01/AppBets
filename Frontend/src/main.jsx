@@ -38,6 +38,16 @@ if ('serviceWorker' in navigator) {
     }
   }
 
+  // Si la pestaña quedó con el bundle viejo y pide un módulo que el deploy
+  // nuevo ya borró, la importación falla: recargamos para tomar la versión actual.
+  window.addEventListener('vite:preloadError', (event) => {
+    const lastReload = Number(sessionStorage.getItem(RELOAD_KEY) || 0)
+    if (Date.now() - lastReload < 15000) return
+    event.preventDefault()
+    sessionStorage.setItem(RELOAD_KEY, String(Date.now()))
+    window.location.reload()
+  })
+
   window.addEventListener('load', checkForUpdate)
   window.setTimeout(checkForUpdate, 5000)
   window.setInterval(checkForUpdate, 60 * 60 * 1000)

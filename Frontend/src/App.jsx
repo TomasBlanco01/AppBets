@@ -1,9 +1,7 @@
-import { useState } from 'react'
+import { useState, lazy, Suspense } from 'react'
 import HomeScreen from './components/HomeScreen'
-import BetsView from './components/BetsView'
-import IOView from './components/IOView'
 import Login from './components/Login'
-import { Typography, Container, Box, Button, IconButton, Tooltip } from "@mui/material";
+import { Typography, Container, Box, Button, IconButton, Tooltip, CircularProgress } from "@mui/material";
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import SavingsIcon from '@mui/icons-material/Savings';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -11,11 +9,15 @@ import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import LogoutIcon from '@mui/icons-material/Logout';
 import exportService from './services/export';
 import authService from './services/auth';
-import '@fontsource/roboto/300.css';
-import '@fontsource/roboto/400.css';
-import '@fontsource/roboto/500.css';
-import '@fontsource/roboto/700.css';
-import '@fontsource/roboto/900.css';
+import '@fontsource/roboto/latin-300.css';
+import '@fontsource/roboto/latin-400.css';
+import '@fontsource/roboto/latin-500.css';
+import '@fontsource/roboto/latin-700.css';
+import '@fontsource/roboto/latin-900.css';
+
+// Cada módulo se descarga recién cuando se abre, así el inicio carga más rápido.
+const BetsView = lazy(() => import('./components/BetsView'));
+const IOView = lazy(() => import('./components/IOView'));
 
 const SECTION_SUBTITLES = {
   home: 'Gestión Financiera Personal',
@@ -114,8 +116,16 @@ const App = () => {
       )}
 
       {view === 'home' && <HomeScreen onSelect={setView} />}
-      {view === 'bets' && <BetsView />}
-      {view === 'io' && <IOView />}
+      <Suspense
+        fallback={(
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
+            <CircularProgress />
+          </Box>
+        )}
+      >
+        {view === 'bets' && <BetsView />}
+        {view === 'io' && <IOView />}
+      </Suspense>
     </Box>
   );
 };
