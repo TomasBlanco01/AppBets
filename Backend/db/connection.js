@@ -240,10 +240,27 @@ async function migrateIOAddClientId() {
   `);
 }
 
+// Migración única: Bets también permite cargar movimientos sin conexión, con
+// el mismo esquema de clientId + índice único que I/O.
+async function migrateMovementsAddClientId() {
+  const columns = await client.execute('PRAGMA table_info(movements)');
+  const hasClientIdColumn = columns.rows.some((c) => c.name === 'clientId');
+  if (!hasClientIdColumn) {
+    await client.execute('ALTER TABLE movements ADD COLUMN clientId TEXT');
+  }
+
+  await client.execute(`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_movements_client_id
+    ON movements(clientId)
+    WHERE clientId IS NOT NULL
+  `);
+}
+
 async function migrate() {
   await createTables();
   await migrateIOAddCategory();
   await migrateIOAddClientId();
+  await migrateMovementsAddClientId();
   await migrateTipsterColumnToRelation();
   await migrateDropBetType();
   await migrateBetsAddSportAndHalfStatuses();

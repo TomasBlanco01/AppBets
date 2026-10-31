@@ -228,14 +228,25 @@ const MovementList = ({ movements, pages, updateMovement, deleteMovement, select
                         </Typography>
                       </TableCell>
                       <TableCell align="center">
-                        <Chip
-                          label={mov.type === 'deposit' ? 'Depósito' : 'Retiro'}
-                          color={mov.type === 'deposit' ? 'error' : 'success'}
-                          size="small"
-                          variant="outlined"
-                          icon={mov.type === 'deposit' ? <ArrowCircleDownIcon sx={{ fontSize: '16px' }} /> : <ArrowCircleUpIcon sx={{ fontSize: '16px' }} />}
-                          sx={{ fontWeight: 600, px: 0.5 }}
-                        />
+                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
+                          <Chip
+                            label={mov.type === 'deposit' ? 'Depósito' : 'Retiro'}
+                            color={mov.type === 'deposit' ? 'error' : 'success'}
+                            size="small"
+                            variant="outlined"
+                            icon={mov.type === 'deposit' ? <ArrowCircleDownIcon sx={{ fontSize: '16px' }} /> : <ArrowCircleUpIcon sx={{ fontSize: '16px' }} />}
+                            sx={{ fontWeight: 600, px: 0.5 }}
+                          />
+                          {mov.pending && (
+                            <Chip
+                              label="Pendiente"
+                              color="warning"
+                              size="small"
+                              variant="outlined"
+                              sx={{ height: 20, fontSize: '0.6rem', fontWeight: 700 }}
+                            />
+                          )}
+                        </Box>
                       </TableCell>
                       <TableCell
                         align="center"

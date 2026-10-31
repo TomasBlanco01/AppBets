@@ -2,6 +2,25 @@ const { all, get, run } = require('../db/helpers');
 
 const isValidAmount = (amount) => Number.isFinite(amount) && amount > 0;
 
+const normalizeClientId = (clientId) => {
+  const value = typeof clientId === 'string' ? clientId.trim() : '';
+  return value ? value.slice(0, 100) : null;
+};
+
+// Igual que en I/O: un reintento del frontend con el mismo clientId actualiza
+// el registro existente en vez de duplicarlo. Devuelve null si no existe.
+const upsertByClientId = async (clientId, movement) => {
+  const existing = await get('SELECT * FROM movements WHERE clientId = ?', [clientId]);
+  if (!existing) return null;
+
+  await run(
+    'UPDATE movements SET pageId = ?, type = ?, amount = ?, date = ?, note = ? WHERE clientId = ?',
+    [movement.pageId, movement.type, movement.amount, movement.date, movement.note, clientId]
+  );
+
+  return { ...existing, ...movement };
+};
+
 const getMovements = async (req, res) => {
   try {
     const { pageId } = req.query;
@@ -29,8 +48,11 @@ const getMovements = async (req, res) => {
 };
 
 const createMovement = async (req, res) => {
+  let normalizedClientId = null;
+  let movement = null;
+
   try {
-    const { pageId, type, amount, date, note } = req.body;
+    const { pageId, type, amount, date, note, clientId } = req.body;
 
     if (!pageId || !type || !amount || !date) {
       return res.status(400).json({ message: 'Faltan campos obligatorios (pageId, type, amount, date)' });
@@ -51,14 +73,35 @@ const createMovement = async (req, res) => {
       return res.status(400).json({ message: 'La página no existe' });
     }
 
+    movement = { pageId: parsedPageId, type, amount: parsedAmount, date, note: note || '' };
+    normalizedClientId = normalizeClientId(clientId);
+
+    if (normalizedClientId) {
+      const updated = await upsertByClientId(normalizedClientId, movement);
+      if (updated) {
+        return res.json(updated);
+      }
+    }
+
     const result = await run(
-      'INSERT INTO movements (pageId, type, amount, date, note) VALUES (?, ?, ?, ?, ?)',
-      [parsedPageId, type, parsedAmount, date, note || '']
+      'INSERT INTO movements (pageId, type, amount, date, note, clientId) VALUES (?, ?, ?, ?, ?, ?)',
+      [movement.pageId, movement.type, movement.amount, movement.date, movement.note, normalizedClientId]
     );
 
-    const newMovement = { id: result.lastInsertRowid, pageId: parsedPageId, type, amount: parsedAmount, date, note: note || '' };
-    res.status(201).json(newMovement);
+    res.status(201).json({ id: result.lastInsertRowid, ...movement, clientId: normalizedClientId });
   } catch (error) {
+    // Carrera entre dos reintentos simultáneos: el índice único gana.
+    if (normalizedClientId && movement && /UNIQUE constraint failed/i.test(error.message || '')) {
+      try {
+        const updated = await upsertByClientId(normalizedClientId, movement);
+        if (updated) {
+          return res.json(updated);
+        }
+      } catch (retryError) {
+        console.error('Error recuperando movimiento duplicado:', retryError);
+      }
+    }
+
     console.error(error);
     res.status(500).json({ message: 'Error al crear movimiento' });
   }

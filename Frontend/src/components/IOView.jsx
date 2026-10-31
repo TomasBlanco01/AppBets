@@ -1,195 +1,29 @@
-import { useState, useEffect, useMemo, useRef, useCallback, lazy, Suspense } from 'react';
+import { useMemo, lazy, Suspense } from 'react';
 import ioService from '../services/io';
+import { ioStore } from '../services/ioOffline';
+import useOfflineCollection from '../hooks/useOfflineCollection';
 import IODashboard from './IODashboard';
 import CreateIO from './CreateIO';
 import IOList from './IOList';
-import { Container, Divider, Alert, Button, Box } from '@mui/material';
-import {
-  loadCachedMovements,
-  saveCachedMovements,
-  loadOutbox,
-  mergePendingMovements,
-  enqueueMovement,
-  updateQueuedMovement,
-  removeQueuedMovement,
-  hasMovementChanges,
-  createClientId,
-} from '../services/ioOffline';
+import OfflineStatus from './OfflineStatus';
+import { Container, Divider, Box } from '@mui/material';
 
 // @mui/x-charts es la dependencia más pesada: se descarga recién al abrir I/O.
 const IOMonthlyChart = lazy(() => import('./IOMonthlyChart'));
 
 const IOView = () => {
-  const [movements, setMovements] = useState(() => mergePendingMovements(loadCachedMovements()));
-  const [serverUnavailable, setServerUnavailable] = useState(false);
-  const [syncError, setSyncError] = useState('');
-  const [syncing, setSyncing] = useState(false);
-  const syncingRef = useRef(false);
-  const mountedRef = useRef(true);
-  const refreshRequestRef = useRef(0);
-
-  useEffect(() => {
-    mountedRef.current = true;
-    return () => {
-      mountedRef.current = false;
-    };
-  }, []);
-
-  // La caché se actualiza sola con cada cambio de estado, así al abrir la app
-  // se ven los últimos datos aunque el backend todavía esté despertando.
-  useEffect(() => {
-    saveCachedMovements(movements);
-  }, [movements]);
-
-  const pendingCount = useMemo(
-    () => movements.filter((movement) => movement.pending).length,
-    [movements]
-  );
-
-  const refreshFromServer = useCallback(async () => {
-    const requestId = refreshRequestRef.current + 1;
-    refreshRequestRef.current = requestId;
-
-    try {
-      const response = await ioService.getAll();
-
-      // Si mientras tanto se disparó otro refresh (por ejemplo, después de
-      // sincronizar un pendiente), ignoramos esta respuesta vieja.
-      if (!mountedRef.current || requestId !== refreshRequestRef.current) return false;
-
-      setMovements(mergePendingMovements(response.data));
-      setServerUnavailable(false);
-      return true;
-    } catch (error) {
-      if (!mountedRef.current || requestId !== refreshRequestRef.current) return false;
-
-      console.error('Error fetching I/O movements:', error);
-      setServerUnavailable(true);
-      return false;
-    }
-  }, []);
-
-  const syncOutbox = useCallback(async () => {
-    if (syncingRef.current) return 'busy';
-    if (loadOutbox().length === 0) return 'empty';
-
-    syncingRef.current = true;
-    setSyncing(true);
-    setSyncError('');
-
-    let syncedAny = false;
-    let failed = false;
-    const attempted = new Set();
-
-    try {
-      while (!failed) {
-        const item = loadOutbox().find((queued) => !attempted.has(queued.clientId));
-        if (!item) break;
-        attempted.add(item.clientId);
-
-        try {
-          const response = await ioService.create(item, { timeout: 60000 });
-          const current = loadOutbox().find((queued) => queued.clientId === item.clientId);
-
-          if (!current) {
-            // Se eliminó mientras el POST estaba en vuelo: eliminamos también
-            // el registro que acaba de crear el servidor.
-            try {
-              await ioService.remove(response.data.id);
-            } catch (deleteError) {
-              if (deleteError.response?.status !== 404) {
-                console.error('Error deleting I/O movement after in-flight create:', deleteError);
-                if (mountedRef.current) {
-                  setSyncError('No se pudo eliminar un movimiento que se estaba sincronizando.');
-                }
-              }
-            }
-            continue;
-          }
-
-          if (hasMovementChanges(current, item)) {
-            // Se editó mientras el POST estaba en vuelo. Dejamos el movimiento
-            // en la cola: el próximo sync manda los datos nuevos y el backend
-            // actualiza el mismo clientId.
-            continue;
-          }
-
-          removeQueuedMovement(item.clientId);
-          syncedAny = true;
-
-          if (mountedRef.current) {
-            setMovements((prev) => prev.map((movement) => (
-              movement.clientId === item.clientId
-                ? { ...response.data, pending: false }
-                : movement
-            )));
-          }
-        } catch (error) {
-          const status = error.response?.status;
-          console.error('Error syncing I/O movement:', error);
-
-          if (status && status >= 400 && status < 500 && status !== 401 && status !== 429) {
-            // Error de validación: reintentarlo para siempre no sirve.
-            removeQueuedMovement(item.clientId);
-            if (mountedRef.current) {
-              setMovements((prev) => prev.filter((movement) => movement.clientId !== item.clientId));
-              setSyncError(error.response?.data?.message || 'No se pudo guardar un movimiento pendiente.');
-            }
-            continue;
-          }
-
-          // 401 lo maneja el interceptor de axios. Para red/5xx/429 dejamos
-          // el movimiento en la cola y reintentamos más adelante.
-          failed = true;
-          if (mountedRef.current) setServerUnavailable(true);
-        }
-      }
-    } finally {
-      syncingRef.current = false;
-      if (mountedRef.current) setSyncing(false);
-    }
-
-    if (mountedRef.current && syncedAny && !failed) {
-      await refreshFromServer();
-    }
-
-    return failed ? 'pending' : 'synced';
-  }, [refreshFromServer]);
-
-  useEffect(() => {
-    refreshFromServer();
-    syncOutbox();
-  }, [refreshFromServer, syncOutbox]);
-
-  useEffect(() => {
-    const handleOnline = () => {
-      refreshFromServer();
-      syncOutbox();
-    };
-    const handleVisibility = () => {
-      if (document.visibilityState === 'visible') {
-        refreshFromServer();
-        syncOutbox();
-      }
-    };
-
-    window.addEventListener('online', handleOnline);
-    document.addEventListener('visibilitychange', handleVisibility);
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      document.removeEventListener('visibilitychange', handleVisibility);
-    };
-  }, [refreshFromServer, syncOutbox]);
-
-  // Mientras haya pendientes, reintentamos cada minuto. Si el backend sigue
-  // dormido, el movimiento queda a salvo en localStorage.
-  useEffect(() => {
-    if (pendingCount === 0) return undefined;
-    const interval = setInterval(() => {
-      syncOutbox();
-    }, 60000);
-    return () => clearInterval(interval);
-  }, [pendingCount, syncOutbox]);
+  const {
+    items: movements,
+    pendingCount,
+    serverUnavailable,
+    syncError,
+    clearSyncError,
+    syncing,
+    retry,
+    add: addMovement,
+    update: updateMovement,
+    remove: deleteMovement,
+  } = useOfflineCollection({ service: ioService, store: ioStore, label: 'I/O movements' });
 
   const sortedMovements = useMemo(() => {
     return [...movements].sort((a, b) => {
@@ -202,124 +36,16 @@ const IOView = () => {
     });
   }, [movements]);
 
-  const addMovement = (newMovement) => {
-    const clientId = createClientId();
-    const queuedMovement = {
-      clientId,
-      type: newMovement.type,
-      category: newMovement.category,
-      amount: newMovement.amount,
-      date: newMovement.date,
-      note: newMovement.note || '',
-      createdAt: new Date().toISOString(),
-    };
-
-    enqueueMovement(queuedMovement);
-    setMovements((prev) => [{ ...queuedMovement, id: clientId, pending: true }, ...prev]);
-    setSyncError('');
-    syncOutbox();
-  };
-
-  const updateMovement = (movementId, data) => {
-    const target = movements.find((movement) => movement.id === movementId);
-
-    if (target?.pending) {
-      const payload = {
-        type: data.type,
-        category: data.category,
-        amount: data.amount,
-        date: data.date,
-        note: data.note || '',
-      };
-      updateQueuedMovement(target.clientId, payload);
-      setMovements((prev) => prev.map((movement) => (
-        movement.id === movementId ? { ...movement, ...payload } : movement
-      )));
-      return Promise.resolve();
-    }
-
-    return ioService.update(movementId, data)
-      .then(() => refreshFromServer())
-      .catch((error) => {
-        console.error('Error updating I/O movement:', error);
-        setSyncError('No se pudo actualizar el movimiento. Revisá la conexión e intentá de nuevo.');
-      });
-  };
-
-  const deleteMovement = (movementId) => {
-    const target = movements.find((movement) => movement.id === movementId);
-
-    if (target?.pending) {
-      removeQueuedMovement(target.clientId);
-      setMovements((prev) => prev.filter((movement) => movement.id !== movementId));
-      return Promise.resolve();
-    }
-
-    return ioService.remove(movementId)
-      .then(() => setMovements((prev) => prev.filter((movement) => movement.id !== movementId)))
-      .catch((error) => {
-        console.error('Error deleting I/O movement:', error);
-        setSyncError('No se pudo eliminar el movimiento. Revisá la conexión e intentá de nuevo.');
-      });
-  };
-
   return (
     <>
-      {(pendingCount > 0 || (serverUnavailable && pendingCount === 0) || syncError) && (
-        <Container maxWidth="xl" sx={{ mt: 2 }}>
-          {pendingCount > 0 && (
-            <Alert
-              severity="warning"
-              sx={{ mb: 2 }}
-              action={(
-                <Button
-                  color="inherit"
-                  size="small"
-                  disabled={syncing}
-                  onClick={() => {
-                    refreshFromServer();
-                    syncOutbox();
-                  }}
-                >
-                  {syncing ? 'Sincronizando…' : 'Reintentar'}
-                </Button>
-              )}
-            >
-              {pendingCount === 1
-                ? 'Hay 1 movimiento guardado localmente. Se sincronizará cuando el servidor esté disponible.'
-                : `Hay ${pendingCount} movimientos guardados localmente. Se sincronizarán cuando el servidor esté disponible.`}
-            </Alert>
-          )}
-
-          {serverUnavailable && pendingCount === 0 && (
-            <Alert
-              severity="info"
-              sx={{ mb: 2 }}
-              action={(
-                <Button
-                  color="inherit"
-                  size="small"
-                  disabled={syncing}
-                  onClick={() => {
-                    refreshFromServer();
-                    syncOutbox();
-                  }}
-                >
-                  Reintentar
-                </Button>
-              )}
-            >
-              No se pudo conectar con el servidor. Podés seguir cargando movimientos; se guardarán localmente.
-            </Alert>
-          )}
-
-          {syncError && (
-            <Alert severity="error" sx={{ mb: 2 }} onClose={() => setSyncError('')}>
-              {syncError}
-            </Alert>
-          )}
-        </Container>
-      )}
+      <OfflineStatus
+        pendingCount={pendingCount}
+        serverUnavailable={serverUnavailable}
+        syncError={syncError}
+        onClearError={clearSyncError}
+        syncing={syncing}
+        onRetry={retry}
+      />
 
       <IODashboard movements={sortedMovements} />
       {/* Reserva el alto del gráfico para que el formulario no salte al cargarlo */}

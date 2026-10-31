@@ -5,7 +5,7 @@ const getAll = (pageId) => {
   return api.get('/movements', { params });
 };
 
-const create = (movement) => api.post('/movements', movement);
+const create = (movement, config) => api.post('/movements', movement, config);
 const update = (id, data) => api.put(`/movements/${id}`, data);
 const remove = (id) => api.delete(`/movements/${id}`);
 

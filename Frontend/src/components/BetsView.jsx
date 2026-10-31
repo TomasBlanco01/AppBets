@@ -1,6 +1,9 @@
 import { useState, useEffect, useMemo } from 'react'
 import movementService from '../services/movements'
 import pageService from '../services/pages'
+import { betsStore, loadCachedPages, saveCachedPages } from '../services/betsOffline'
+import useOfflineCollection from '../hooks/useOfflineCollection'
+import OfflineStatus from './OfflineStatus'
 import Dashboard from './Dashboard'
 import CreateMovement from './CreateMovement'
 import MovementList from './MovementList'
@@ -18,51 +21,57 @@ const formatMoney = (n) => {
 };
 
 const BetsView = () => {
-  const [movements, setMovements] = useState([]);
-  const [pages, setPages] = useState([]);
+  const [pages, setPages] = useState(loadCachedPages);
   const [selectedPageId, setSelectedPageId] = useState(null);
   const [detailPageId, setDetailPageId] = useState(null);
   const isMobile = useMediaQuery('(max-width:600px)');
 
-  useEffect(() => {
-    movementService.getAll()
-      .then(response => setMovements(response.data))
-      .catch(error => console.error('Error fetching movements:', error));
-  }, []);
+  const {
+    items: rawMovements,
+    pendingCount,
+    serverUnavailable,
+    syncError,
+    clearSyncError,
+    syncing,
+    retry,
+    add: addMovement,
+    update: updateMovement,
+    remove: deleteMovement,
+  } = useOfflineCollection({ service: movementService, store: betsStore, label: 'bets movements' });
+
+  const refreshPages = () => pageService.getAll()
+    .then(response => {
+      setPages(response.data);
+      saveCachedPages(response.data);
+    })
+    .catch(error => console.error('Error fetching pages:', error));
 
   useEffect(() => {
-    pageService.getAll()
-      .then(response => setPages(response.data))
-      .catch(error => console.error('Error fetching pages:', error));
+    refreshPages();
   }, []);
+
+  // Los pendientes todavía no tienen el nombre de la casa que agrega el backend.
+  const movements = useMemo(() => rawMovements.map(m => (
+    m.pageName ? m : { ...m, pageName: pages.find(p => p.id === m.pageId)?.name || '—' }
+  )), [rawMovements, pages]);
 
   const filteredMovements = useMemo(() => {
     const list = selectedPageId === null ? movements : movements.filter(m => m.pageId === selectedPageId);
-    return [...list].sort((a, b) => b.id - a.id);
+    // Pendientes primero; después, del más nuevo al más viejo.
+    return [...list].sort((a, b) => {
+      if (Boolean(a.pending) !== Boolean(b.pending)) return a.pending ? -1 : 1;
+      if (a.pending && b.pending) return String(b.createdAt).localeCompare(String(a.createdAt));
+      return b.id - a.id;
+    });
   }, [movements, selectedPageId]);
-
-  const addMovement = (newMovement) => {
-    movementService.create(newMovement)
-      .then(() => movementService.getAll().then(resp => setMovements(resp.data)))
-      .catch(error => console.error('Error adding movement:', error));
-  };
-
-  const updateMovement = (movementId, data) => {
-    movementService.update(movementId, data)
-      .then(() => movementService.getAll().then(resp => setMovements(resp.data)))
-      .catch(error => console.error('Error updating movement:', error));
-  };
-
-  const deleteMovement = (movementId) => {
-    movementService.remove(movementId)
-      .then(() => setMovements(prev => prev.filter(m => m.id !== movementId)))
-      .catch(error => console.error('Error deleting movement:', error));
-  };
 
   const addPage = (newPage) => {
     pageService.create(newPage)
-      .then(() => pageService.getAll().then(resp => setPages(resp.data)))
-      .catch(error => console.error('Error adding page:', error));
+      .then(() => refreshPages())
+      .catch(error => {
+        console.error('Error adding page:', error);
+        alert('No se pudo crear la página. Revisá la conexión e intentá de nuevo.');
+      });
   };
 
   const totalsByPage = useMemo(() => {
@@ -96,6 +105,18 @@ const BetsView = () => {
 
   return (
     <>
+      <OfflineStatus
+        pendingCount={pendingCount}
+        serverUnavailable={serverUnavailable}
+        syncError={syncError}
+        onClearError={clearSyncError}
+        syncing={syncing}
+        onRetry={() => {
+          retry();
+          refreshPages();
+        }}
+      />
+
       <Container maxWidth="xl" sx={{ mt: 2 }}>
         <Paper
           sx={{
