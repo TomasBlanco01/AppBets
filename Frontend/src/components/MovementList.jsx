@@ -13,6 +13,9 @@ import ArrowCircleDownIcon from '@mui/icons-material/ArrowCircleDown';
 import ArrowCircleUpIcon from '@mui/icons-material/ArrowCircleUp';
 import PageAvatar from './PageAvatar';
 import { formatMoney as formatArs } from '../utils/money';
+import { toCsv, downloadCsv, formatCsvNumber } from '../utils/csv';
+import { todayAR } from '../utils/finance';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
 
 // Los montos de cada movimiento se muestran siempre en pesos (como se cargaron).
 const formatMoney = (n) => formatArs(Math.abs(n));
@@ -63,6 +66,18 @@ const MovementList = ({ movements, pages, updateMovement, deleteMovement, select
   const handleFilterChange = (patch) => {
     setFilters(prev => ({ ...prev, ...patch }));
     setPage(1);
+  };
+
+  // Exporta lo que se ve con los filtros actuales.
+  const handleExportCsv = () => {
+    const csv = toCsv(filteredMovements, [
+      { header: 'Fecha', value: (m) => m.date },
+      { header: 'Casa', value: (m) => m.pageName },
+      { header: 'Tipo', value: (m) => (m.type === 'deposit' ? 'Depósito' : 'Retiro') },
+      { header: 'Monto', value: (m) => formatCsvNumber(m.type === 'withdrawal' ? m.amount : -m.amount) },
+      { header: 'Nota', value: (m) => m.note || '' },
+    ]);
+    downloadCsv(`geseco-bets-${todayAR()}.csv`, csv);
   };
 
   const handleOpenEdit = (mov) => {
@@ -169,6 +184,15 @@ const MovementList = ({ movements, pages, updateMovement, deleteMovement, select
                 Limpiar filtros
               </Button>
             )}
+            <Button
+              size="small"
+              variant="outlined"
+              startIcon={<FileDownloadIcon />}
+              disabled={filteredMovements.length === 0}
+              onClick={handleExportCsv}
+            >
+              Exportar CSV
+            </Button>
           </Box>
 
           {filteredMovements.length === 0 ? (

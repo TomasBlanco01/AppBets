@@ -6,10 +6,12 @@ import IODashboard from './IODashboard';
 import CreateIO from './CreateIO';
 import IOList from './IOList';
 import OfflineStatus from './OfflineStatus';
+import IORecurring from './IORecurring';
 import { Container, Divider, Box } from '@mui/material';
 
 // @mui/x-charts es la dependencia más pesada: se descarga recién al abrir I/O.
 const IOMonthlyChart = lazy(() => import('./IOMonthlyChart'));
+const IOCategoryChart = lazy(() => import('./IOCategoryChart'));
 
 const IOView = () => {
   const {
@@ -20,6 +22,7 @@ const IOView = () => {
     clearSyncError,
     syncing,
     retry,
+    refresh,
     add: addMovement,
     update: updateMovement,
     remove: deleteMovement,
@@ -52,7 +55,11 @@ const IOView = () => {
       <Suspense fallback={<Box sx={{ minHeight: { xs: 330, sm: 410 }, mb: 3 }} />}>
         <IOMonthlyChart movements={sortedMovements} />
       </Suspense>
+      <Suspense fallback={<Box sx={{ minHeight: { xs: 300, sm: 340 }, mb: 3 }} />}>
+        <IOCategoryChart movements={sortedMovements} />
+      </Suspense>
       <CreateIO addMovement={addMovement} />
+      <IORecurring onChanged={refresh} />
       <Container maxWidth="xl">
         <Divider sx={{ borderColor: '#2a3a4a', my: 3 }} />
       </Container>

@@ -67,6 +67,16 @@ async function createTables() {
         date TEXT NOT NULL,
         amount REAL NOT NULL CHECK(amount >= 0)
       )`,
+      `CREATE TABLE IF NOT EXISTS io_recurring (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        type TEXT NOT NULL CHECK(type IN ('income', 'expense')),
+        category TEXT NOT NULL,
+        amount REAL NOT NULL CHECK(amount > 0),
+        note TEXT NOT NULL DEFAULT '',
+        dayOfMonth INTEGER NOT NULL CHECK(dayOfMonth BETWEEN 1 AND 31),
+        startMonth TEXT NOT NULL,
+        lastGeneratedMonth TEXT
+      )`,
       `CREATE TABLE IF NOT EXISTS login_attempts (
         ip TEXT PRIMARY KEY,
         count INTEGER NOT NULL DEFAULT 0,

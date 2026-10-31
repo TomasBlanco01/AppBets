@@ -13,6 +13,9 @@ import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import { IO_CATEGORIES, ALL_IO_CATEGORIES, DEFAULT_IO_CATEGORY } from '../constants/ioCategories';
 import { formatMoney as formatArs } from '../utils/money';
+import { toCsv, downloadCsv, formatCsvNumber } from '../utils/csv';
+import { todayAR } from '../utils/finance';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
 
 // Los montos de cada movimiento se muestran siempre en pesos (como se cargaron).
 const formatMoney = (n) => formatArs(Math.abs(n));
@@ -80,6 +83,18 @@ const IOList = ({ movements, updateMovement, deleteMovement }) => {
       return next;
     });
     setPage(1);
+  };
+
+  // Exporta lo que se ve con los filtros actuales.
+  const handleExportCsv = () => {
+    const csv = toCsv(filteredMovements, [
+      { header: 'Fecha', value: (m) => m.date },
+      { header: 'Tipo', value: (m) => (m.type === 'income' ? 'Ingreso' : 'Gasto') },
+      { header: 'Categoría', value: (m) => m.category || DEFAULT_IO_CATEGORY[m.type] },
+      { header: 'Monto', value: (m) => formatCsvNumber(m.type === 'income' ? m.amount : -m.amount) },
+      { header: 'Descripción', value: (m) => m.note || '' },
+    ]);
+    downloadCsv(`geseco-io-${todayAR()}.csv`, csv);
   };
 
   const handleOpenEdit = (mov) => {
@@ -204,6 +219,15 @@ const IOList = ({ movements, updateMovement, deleteMovement }) => {
                 Limpiar filtros
               </Button>
             )}
+            <Button
+              size="small"
+              variant="outlined"
+              startIcon={<FileDownloadIcon />}
+              disabled={filteredMovements.length === 0}
+              onClick={handleExportCsv}
+            >
+              Exportar CSV
+            </Button>
           </Box>
 
           {filteredMovements.length === 0 ? (

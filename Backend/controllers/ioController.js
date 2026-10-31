@@ -1,4 +1,5 @@
 const { all, get, run } = require('../db/helpers');
+const { generateRecurring } = require('./ioRecurringController');
 
 const VALID_TYPES = ['income', 'expense'];
 const DEFAULT_CATEGORY = {
@@ -40,6 +41,9 @@ const upsertByClientId = async (clientId, movement) => {
 
 const getIOMovements = async (req, res) => {
   try {
+    // Antes de listar, crea los movimientos fijos que ya vencieron.
+    await generateRecurring();
+
     const { type } = req.query;
     let query = 'SELECT * FROM io_movements';
     const params = [];
