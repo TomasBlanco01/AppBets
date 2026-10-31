@@ -10,12 +10,12 @@ const pageLogos = {
   dbbet: '/pages/dbbet.png',
   betsvip: '/pages/betsvip.svg',
   subsvip: '/pages/subsvip.svg',
-  betar: '/pages/betar.png',
+  sportsbet: '/pages/sportsbet.png',
   azar777: '/pages/azar777.ico',
   betsson: '/pages/betsson.png',
 };
 
-// "Bet.ar", "betar" y "Bet ar" usan el mismo logo.
+// "SportsBet", "sportsbet" y "Sports Bet" usan el mismo logo.
 const normalizeName = (name) => name.toLowerCase().replace(/[^a-z0-9]/g, '');
 
 const AVATAR_COLORS = ['#00e676', '#ffd740', '#29b6f6', '#ff7043', '#ab47bc', '#26a69a', '#ec407a', '#8d6e63'];
