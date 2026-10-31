@@ -32,6 +32,19 @@ ingresos y gastos (I/O). Es una PWA instalable que funciona sin conexión para I
 
 Las tablas se crean y migran solas la primera vez que la API recibe una petición.
 
+## Tests
+
+```bash
+npm test --prefix Backend
+npm test --prefix Frontend
+```
+
+- **Backend** (`node:test`): login y bloqueo por intentos, cierre de todas las
+  sesiones, passkeys de punta a punta (con un autenticador simulado), reintentos
+  sin duplicar, fijos mensuales y backup. Cada archivo usa una base libSQL temporal.
+- **Frontend** (Vitest): cálculos de totales y gráficos, conversión a dólares,
+  formato de montos, CSV y la cola de sincronización sin conexión.
+
 ## Deploy
 
 Cada push a `main` se despliega automáticamente en Vercel. La configuración
