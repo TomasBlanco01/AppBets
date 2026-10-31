@@ -1,4 +1,4 @@
-const jwt = require('jsonwebtoken');
+const { signToken } = require('../middleware/sessions');
 const { registerFailedAttempt, clearAttempts } = require('../middleware/loginRateLimit');
 
 const login = async (req, res) => {
@@ -15,8 +15,7 @@ const login = async (req, res) => {
   }
 
   await clearAttempts(req.ip);
-  const token = jwt.sign({}, process.env.JWT_SECRET, { expiresIn: '90d' });
-  res.json({ token });
+  res.json({ token: await signToken() });
 };
 
 module.exports = { login };

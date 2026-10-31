@@ -30,15 +30,19 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 // responder) reintentamos con backoff (solo GET, no login): 1s, 2s y 4s.
 // Si sigue fallando, la app muestra el aviso de sin conexión.
 const MAX_RETRIES = 3;
+
+// Endpoints para entrar (contraseña o passkey): un 401 ahí es "credenciales
+// incorrectas", no "sesión vencida", así que no se cierra sesión ni se reintenta.
+const isLoginRequest = (config) => /\/auth\/(login|passkey\/login\/)/.test(config?.url || '');
 const isRetryableError = (error) =>
   error.config?.method === 'get' &&
-  !error.config.url.endsWith('/auth/login') &&
+  !isLoginRequest(error.config) &&
   (!error.response || error.response.status >= 500);
 
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-    if (error.response && error.response.status === 401 && !error.config.url.endsWith('/auth/login')) {
+    if (error.response && error.response.status === 401 && !isLoginRequest(error.config)) {
       localStorage.removeItem(TOKEN_KEY);
       window.location.reload();
       return Promise.reject(error);

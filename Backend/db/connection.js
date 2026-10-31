@@ -77,6 +77,24 @@ async function createTables() {
         startMonth TEXT NOT NULL,
         lastGeneratedMonth TEXT
       )`,
+      `CREATE TABLE IF NOT EXISTS app_settings (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL
+      )`,
+      `CREATE TABLE IF NOT EXISTS webauthn_credentials (
+        id TEXT PRIMARY KEY,
+        publicKey TEXT NOT NULL,
+        counter INTEGER NOT NULL DEFAULT 0,
+        transports TEXT NOT NULL DEFAULT '[]',
+        deviceName TEXT NOT NULL DEFAULT '',
+        createdAt TEXT NOT NULL,
+        lastUsedAt TEXT
+      )`,
+      `CREATE TABLE IF NOT EXISTS auth_challenges (
+        id TEXT PRIMARY KEY,
+        challenge TEXT NOT NULL,
+        expiresAt INTEGER NOT NULL
+      )`,
       `CREATE TABLE IF NOT EXISTS login_attempts (
         ip TEXT PRIMARY KEY,
         count INTEGER NOT NULL DEFAULT 0,

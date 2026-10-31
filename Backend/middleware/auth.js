@@ -1,6 +1,6 @@
-const jwt = require('jsonwebtoken');
+const { isTokenValid } = require('./sessions');
 
-const requireAuth = (req, res, next) => {
+const requireAuth = async (req, res, next) => {
   const header = req.headers.authorization || '';
   const token = header.startsWith('Bearer ') ? header.slice(7) : null;
 
@@ -8,12 +8,11 @@ const requireAuth = (req, res, next) => {
     return res.status(401).json({ message: 'No autenticado' });
   }
 
-  try {
-    jwt.verify(token, process.env.JWT_SECRET);
-    next();
-  } catch (error) {
-    res.status(401).json({ message: 'Sesión inválida o expirada' });
+  if (!(await isTokenValid(token))) {
+    return res.status(401).json({ message: 'Sesión inválida o expirada' });
   }
+
+  next();
 };
 
 module.exports = { requireAuth };

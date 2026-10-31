@@ -3,11 +3,13 @@ import HomeScreen from './components/HomeScreen'
 import Login from './components/Login'
 import CurrencyProvider from './components/CurrencyProvider'
 import CurrencyToggle from './components/CurrencyToggle'
-import { Typography, Container, Box, Button, IconButton, Tooltip, CircularProgress } from "@mui/material";
+import { Typography, Container, Box, Button, IconButton, Tooltip, CircularProgress, Menu, MenuItem, ListItemIcon } from "@mui/material";
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import LogoutIcon from '@mui/icons-material/Logout';
+import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
+import FingerprintIcon from '@mui/icons-material/Fingerprint';
 import exportService from './services/export';
 import authService from './services/auth';
 import '@fontsource/roboto/latin-300.css';
@@ -19,6 +21,7 @@ import '@fontsource/roboto/latin-900.css';
 // Cada módulo se descarga recién cuando se abre, así el inicio carga más rápido.
 const BetsView = lazy(() => import('./components/BetsView'));
 const IOView = lazy(() => import('./components/IOView'));
+const SecurityDialog = lazy(() => import('./components/SecurityDialog'));
 
 const SECTION_SUBTITLES = {
   home: 'Gestión Financiera Personal',
@@ -29,6 +32,8 @@ const SECTION_SUBTITLES = {
 const App = () => {
   const [view, setView] = useState('home');
   const [authed, setAuthed] = useState(authService.isAuthenticated());
+  const [accountMenuAnchor, setAccountMenuAnchor] = useState(null);
+  const [securityOpen, setSecurityOpen] = useState(false);
 
   if (!authed) {
     return <Login onSuccess={() => setAuthed(true)} />;
@@ -64,14 +69,35 @@ const App = () => {
               <FileDownloadIcon />
             </IconButton>
           </Tooltip>
-          <Tooltip title="Cerrar sesión">
+          <Tooltip title="Cuenta">
             <IconButton
-              onClick={() => authService.logout()}
+              onClick={(e) => setAccountMenuAnchor(e.currentTarget)}
               sx={{ position: 'absolute', top: 0, right: 16, color: 'text.secondary' }}
             >
-              <LogoutIcon />
+              <ManageAccountsIcon />
             </IconButton>
           </Tooltip>
+          <Menu
+            anchorEl={accountMenuAnchor}
+            open={Boolean(accountMenuAnchor)}
+            onClose={() => setAccountMenuAnchor(null)}
+            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+            transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+          >
+            <MenuItem
+              onClick={() => {
+                setAccountMenuAnchor(null);
+                setSecurityOpen(true);
+              }}
+            >
+              <ListItemIcon><FingerprintIcon fontSize="small" /></ListItemIcon>
+              Face ID / huella y sesiones
+            </MenuItem>
+            <MenuItem onClick={() => authService.logout()}>
+              <ListItemIcon><LogoutIcon fontSize="small" /></ListItemIcon>
+              Cerrar sesión
+            </MenuItem>
+          </Menu>
           <Box
             onClick={() => setView('home')}
             sx={{
@@ -139,6 +165,12 @@ const App = () => {
         {view === 'bets' && <BetsView />}
         {view === 'io' && <IOView />}
       </Suspense>
+
+      {securityOpen && (
+        <Suspense fallback={null}>
+          <SecurityDialog open={securityOpen} onClose={() => setSecurityOpen(false)} />
+        </Suspense>
+      )}
     </Box>
     </CurrencyProvider>
   );

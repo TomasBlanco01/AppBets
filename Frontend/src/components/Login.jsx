@@ -1,12 +1,28 @@
 import { useState } from 'react';
-import { Container, Paper, Box, Typography, TextField, Button, Alert } from '@mui/material';
+import { Container, Paper, Box, Typography, TextField, Button, Alert, Divider } from '@mui/material';
 import LockIcon from '@mui/icons-material/Lock';
+import FingerprintIcon from '@mui/icons-material/Fingerprint';
 import authService from '../services/auth';
 
 const Login = ({ onSuccess }) => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const handlePasskey = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      await authService.loginWithPasskey();
+      onSuccess();
+    } catch (err) {
+      if (!authService.isPasskeyCancel(err)) {
+        setError(err.response?.data?.message || 'No se pudo entrar con la passkey');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -52,6 +68,20 @@ const Login = ({ onSuccess }) => {
           <Button type="submit" variant="contained" fullWidth disabled={loading}>
             Entrar
           </Button>
+          {authService.supportsPasskeys() && (
+            <>
+              <Divider sx={{ my: 2, color: 'text.secondary', fontSize: '0.75rem' }}>o</Divider>
+              <Button
+                variant="outlined"
+                fullWidth
+                startIcon={<FingerprintIcon />}
+                onClick={handlePasskey}
+                disabled={loading}
+              >
+                Entrar con Face ID / huella
+              </Button>
+            </>
+          )}
         </Paper>
       </Container>
     </Box>
