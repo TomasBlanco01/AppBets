@@ -46,8 +46,22 @@ app.use('/api/export', requireAuth, exportRoutes);
 // mismo servidor: una sola app, una sola URL, sin CORS entre front y back.
 const FRONTEND_DIST = path.join(__dirname, '../Frontend/dist');
 if (fs.existsSync(FRONTEND_DIST)) {
-  app.use(express.static(FRONTEND_DIST));
+  // El service worker, el HTML y el manifest tienen nombre fijo: si el navegador
+  // o un CDN los cachea, la PWA no detecta el deploy nuevo. Los bundles de
+  // /assets llevan hash en el nombre, así que pueden cachearse para siempre.
+  const NO_CACHE_FILES = new Set(['sw.js', 'registerSW.js', 'index.html', 'manifest.webmanifest']);
+  app.use(express.static(FRONTEND_DIST, {
+    setHeaders: (res, filePath) => {
+      const relative = path.relative(FRONTEND_DIST, filePath).split(path.sep).join('/');
+      if (NO_CACHE_FILES.has(relative)) {
+        res.set('Cache-Control', 'no-cache');
+      } else if (relative.startsWith('assets/')) {
+        res.set('Cache-Control', 'public, max-age=31536000, immutable');
+      }
+    },
+  }));
   app.use((req, res) => {
+    res.set('Cache-Control', 'no-cache');
     res.sendFile(path.join(FRONTEND_DIST, 'index.html'));
   });
 } else {

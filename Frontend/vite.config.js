@@ -8,6 +8,11 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
+      workbox: {
+        // Sin esto, el service worker responde index.html a cualquier
+        // navegación, incluidas las rutas del backend.
+        navigateFallbackDenylist: [/^\/api\//, /^\/health$/],
+      },
       manifest: {
         name: 'Ges.Eco - Gestión Financiera',
         short_name: 'Ges.Eco',
