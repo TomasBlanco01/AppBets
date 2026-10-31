@@ -5,7 +5,6 @@
 // tanto se guardan acá y se reintentan cuando el servidor vuelve.
 
 const MOVEMENTS_KEY = 'geseco_io_cache_movements';
-const BUDGETS_KEY = 'geseco_io_cache_budgets';
 const OUTBOX_KEY = 'geseco_io_outbox';
 
 const readArray = (key) => {
@@ -30,9 +29,6 @@ const writeArray = (key, value) => {
 
 export const loadCachedMovements = () => readArray(MOVEMENTS_KEY);
 export const saveCachedMovements = (movements) => writeArray(MOVEMENTS_KEY, movements);
-
-export const loadCachedBudgets = () => readArray(BUDGETS_KEY);
-export const saveCachedBudgets = (budgets) => writeArray(BUDGETS_KEY, budgets);
 
 export const loadOutbox = () => readArray(OUTBOX_KEY);
 export const saveOutbox = (outbox) => writeArray(OUTBOX_KEY, outbox);

@@ -2,15 +2,12 @@ import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import ioService from '../services/io';
 import IODashboard from './IODashboard';
 import IOMonthlyChart from './IOMonthlyChart';
-import IOBudget from './IOBudget';
 import CreateIO from './CreateIO';
 import IOList from './IOList';
 import { Container, Divider, Alert, Button } from '@mui/material';
 import {
   loadCachedMovements,
   saveCachedMovements,
-  loadCachedBudgets,
-  saveCachedBudgets,
   loadOutbox,
   mergePendingMovements,
   enqueueMovement,
@@ -22,7 +19,6 @@ import {
 
 const IOView = () => {
   const [movements, setMovements] = useState(() => mergePendingMovements(loadCachedMovements()));
-  const [budgets, setBudgets] = useState(() => loadCachedBudgets());
   const [serverUnavailable, setServerUnavailable] = useState(false);
   const [syncError, setSyncError] = useState('');
   const [syncing, setSyncing] = useState(false);
@@ -43,10 +39,6 @@ const IOView = () => {
     saveCachedMovements(movements);
   }, [movements]);
 
-  useEffect(() => {
-    saveCachedBudgets(budgets);
-  }, [budgets]);
-
   const pendingCount = useMemo(
     () => movements.filter((movement) => movement.pending).length,
     [movements]
@@ -56,30 +48,23 @@ const IOView = () => {
     const requestId = refreshRequestRef.current + 1;
     refreshRequestRef.current = requestId;
 
-    const [movementsResult, budgetsResult] = await Promise.allSettled([
-      ioService.getAll(),
-      ioService.getBudgets(),
-    ]);
+    try {
+      const response = await ioService.getAll();
 
-    // Si mientras tanto se disparó otro refresh (por ejemplo, después de
-    // sincronizar un pendiente), ignoramos esta respuesta vieja.
-    if (!mountedRef.current || requestId !== refreshRequestRef.current) return false;
+      // Si mientras tanto se disparó otro refresh (por ejemplo, después de
+      // sincronizar un pendiente), ignoramos esta respuesta vieja.
+      if (!mountedRef.current || requestId !== refreshRequestRef.current) return false;
 
-    if (movementsResult.status === 'fulfilled') {
-      setMovements(mergePendingMovements(movementsResult.value.data));
-    } else {
-      console.error('Error fetching I/O movements:', movementsResult.reason);
+      setMovements(mergePendingMovements(response.data));
+      setServerUnavailable(false);
+      return true;
+    } catch (error) {
+      if (!mountedRef.current || requestId !== refreshRequestRef.current) return false;
+
+      console.error('Error fetching I/O movements:', error);
+      setServerUnavailable(true);
+      return false;
     }
-
-    if (budgetsResult.status === 'fulfilled') {
-      setBudgets(Array.isArray(budgetsResult.value.data) ? budgetsResult.value.data : []);
-    } else {
-      console.error('Error fetching I/O budgets:', budgetsResult.reason);
-    }
-
-    const allOk = movementsResult.status === 'fulfilled' && budgetsResult.status === 'fulfilled';
-    setServerUnavailable(!allOk);
-    return allOk;
   }, []);
 
   const syncOutbox = useCallback(async () => {
@@ -276,20 +261,6 @@ const IOView = () => {
       });
   };
 
-  const saveBudgets = async (newBudgets) => {
-    try {
-      const response = await ioService.saveBudgets(newBudgets);
-      setBudgets(response.data);
-      setServerUnavailable(false);
-      return response;
-    } catch (error) {
-      console.error('Error saving I/O budgets:', error);
-      setServerUnavailable(true);
-      setSyncError('No se pudieron guardar los presupuestos. Revisá la conexión e intentá de nuevo.');
-      throw error;
-    }
-  };
-
   return (
     <>
       {(pendingCount > 0 || (serverUnavailable && pendingCount === 0) || syncError) && (
@@ -350,7 +321,6 @@ const IOView = () => {
 
       <IODashboard movements={sortedMovements} />
       <IOMonthlyChart movements={sortedMovements} />
-      <IOBudget movements={sortedMovements} budgets={budgets} onSave={saveBudgets} />
       <CreateIO addMovement={addMovement} />
       <Container maxWidth="xl">
         <Divider sx={{ borderColor: '#2a3a4a', my: 3 }} />
