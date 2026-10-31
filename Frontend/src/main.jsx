@@ -4,6 +4,7 @@ import { ThemeProvider } from '@mui/material/styles'
 import CssBaseline from '@mui/material/CssBaseline'
 import theme from './theme'
 import App from './App'
+import { SpeedInsights } from '@vercel/speed-insights/react'
 
 // La PWA puede quedar abierta con el service worker anterior y seguir mostrando
 // el bundle viejo. Cuando el navegador activa una versión nueva, recargamos una
@@ -60,5 +61,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
   <ThemeProvider theme={theme}>
     <CssBaseline />
     <App />
+    {/* Métricas reales de carga (solo envía datos cuando corre en Vercel) */}
+    <SpeedInsights />
   </ThemeProvider>
 )

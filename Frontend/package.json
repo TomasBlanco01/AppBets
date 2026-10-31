@@ -17,6 +17,7 @@
     "@mui/styled-engine-sc": "^7.3.2",
     "@mui/x-charts": "^9.13.0",
     "@simplewebauthn/browser": "^14.0.0",
+    "@vercel/speed-insights": "^2.0.0",
     "axios": "^1.11.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
