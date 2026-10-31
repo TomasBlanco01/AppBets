@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, lazy, Suspense } from 'react'
 import movementService from '../services/movements'
 import pageService from '../services/pages'
 import { betsStore, loadCachedPages, saveCachedPages } from '../services/betsOffline'
@@ -16,6 +16,9 @@ import PageAvatar from './PageAvatar';
 import PageDetailDialog from './PageDetailDialog';
 import { useCurrency } from '../context/currency';
 import { totalsByPage as computeTotalsByPage } from '../utils/finance';
+
+// Usa @mui/x-charts: se descarga recién cuando hace falta (comparte chunk con I/O).
+const BetsProfitChart = lazy(() => import('./BetsProfitChart'));
 
 const BetsView = () => {
   const [pages, setPages] = useState(loadCachedPages);
@@ -168,6 +171,10 @@ const BetsView = () => {
       </Container>
 
       <Dashboard movements={filteredMovements} />
+
+      <Suspense fallback={<Box sx={{ minHeight: { xs: 290, sm: 350 }, mb: 3 }} />}>
+        <BetsProfitChart movements={filteredMovements} title={selectedPageName} />
+      </Suspense>
 
       <CreateMovement
         pages={pages}
