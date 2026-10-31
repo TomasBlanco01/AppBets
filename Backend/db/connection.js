@@ -33,7 +33,8 @@ async function createTables() {
         amount REAL NOT NULL CHECK(amount > 0),
         date TEXT NOT NULL,
         note TEXT NOT NULL DEFAULT '',
-        category TEXT NOT NULL DEFAULT 'Otros'
+        category TEXT NOT NULL DEFAULT 'Otros',
+        clientId TEXT
       )`,
       `CREATE TABLE IF NOT EXISTS io_budgets (
         category TEXT PRIMARY KEY,
@@ -217,9 +218,27 @@ async function migrateIOAddCategory() {
   console.log('Migrado io_movements: agregada categoría.');
 }
 
+// Migración única: permite guardar movimientos creados offline y sincronizarlos
+// después sin duplicarlos. El frontend manda un clientId estable y el índice
+// único garantiza que los reintentos actualicen el mismo registro.
+async function migrateIOAddClientId() {
+  const columns = await client.execute('PRAGMA table_info(io_movements)');
+  const hasClientIdColumn = columns.rows.some((c) => c.name === 'clientId');
+  if (!hasClientIdColumn) {
+    await client.execute('ALTER TABLE io_movements ADD COLUMN clientId TEXT');
+  }
+
+  await client.execute(`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_io_movements_client_id
+    ON io_movements(clientId)
+    WHERE clientId IS NOT NULL
+  `);
+}
+
 async function migrate() {
   await createTables();
   await migrateIOAddCategory();
+  await migrateIOAddClientId();
   await migrateTipsterColumnToRelation();
   await migrateDropBetType();
   await migrateBetsAddSportAndHalfStatuses();

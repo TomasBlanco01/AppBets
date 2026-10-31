@@ -13,6 +13,31 @@ const normalizeCategory = (category, type) => {
   return (value || fallback).slice(0, 60);
 };
 
+const normalizeClientId = (clientId) => {
+  const value = typeof clientId === 'string' ? clientId.trim() : '';
+  return value ? value.slice(0, 100) : null;
+};
+
+const serializeIOMovement = (movement) => ({
+  ...movement,
+  category: movement.category || DEFAULT_CATEGORY[movement.type] || 'Otros',
+});
+
+// Busca por clientId y, si existe, actualiza los valores. Esto hace que un
+// reintento del POST siempre converja al último estado de la cola local,
+// incluso si el usuario editó el movimiento mientras el request estaba en vuelo.
+const upsertByClientId = async (clientId, movement) => {
+  const existing = await get('SELECT * FROM io_movements WHERE clientId = ?', [clientId]);
+  if (!existing) return null;
+
+  await run(
+    'UPDATE io_movements SET type = ?, amount = ?, date = ?, note = ?, category = ? WHERE clientId = ?',
+    [movement.type, movement.amount, movement.date, movement.note, movement.category, clientId]
+  );
+
+  return { ...existing, ...movement };
+};
+
 const getIOMovements = async (req, res) => {
   try {
     const { type } = req.query;
@@ -30,10 +55,7 @@ const getIOMovements = async (req, res) => {
     query += ' ORDER BY date DESC, id DESC';
 
     const movements = await all(query, params);
-    res.json(movements.map(m => ({
-      ...m,
-      category: m.category || DEFAULT_CATEGORY[m.type] || 'Otros',
-    })));
+    res.json(movements.map(serializeIOMovement));
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Error al obtener movimientos I/O' });
@@ -41,8 +63,11 @@ const getIOMovements = async (req, res) => {
 };
 
 const createIOMovement = async (req, res) => {
+  let normalizedClientId = null;
+  let movement = null;
+
   try {
-    const { type, amount, date, note, category } = req.body;
+    const { type, amount, date, note, category, clientId } = req.body;
 
     if (!type || amount === undefined || !date) {
       return res.status(400).json({ message: 'Faltan campos obligatorios (type, amount, date)' });
@@ -57,22 +82,49 @@ const createIOMovement = async (req, res) => {
       return res.status(400).json({ message: 'El monto debe ser un número mayor a 0' });
     }
 
-    const normalizedCategory = normalizeCategory(category, type);
-
-    const result = await run(
-      'INSERT INTO io_movements (type, amount, date, note, category) VALUES (?, ?, ?, ?, ?)',
-      [type, parsedAmount, date, note || '', normalizedCategory]
-    );
-
-    res.status(201).json({
-      id: result.lastInsertRowid,
+    movement = {
       type,
       amount: parsedAmount,
       date,
       note: note || '',
-      category: normalizedCategory,
+      category: normalizeCategory(category, type),
+    };
+    normalizedClientId = normalizeClientId(clientId);
+
+    // Si el frontend reintenta un movimiento que ya se guardó (por ejemplo,
+    // porque se perdió la respuesta), actualizamos ese registro en vez de
+    // crear un duplicado. Así un reintento con datos editados no pierde cambios.
+    if (normalizedClientId) {
+      const updated = await upsertByClientId(normalizedClientId, movement);
+      if (updated) {
+        return res.json(serializeIOMovement(updated));
+      }
+    }
+
+    const result = await run(
+      'INSERT INTO io_movements (type, amount, date, note, category, clientId) VALUES (?, ?, ?, ?, ?, ?)',
+      [movement.type, movement.amount, movement.date, movement.note, movement.category, normalizedClientId]
+    );
+
+    res.status(201).json({
+      id: result.lastInsertRowid,
+      ...movement,
+      clientId: normalizedClientId,
     });
   } catch (error) {
+    // Carrera entre dos reintentos simultáneos: el índice único gana.
+    // Buscamos/actualizamos el registro que acaba de insertar el otro request.
+    if (normalizedClientId && movement && /UNIQUE constraint failed/i.test(error.message || '')) {
+      try {
+        const updated = await upsertByClientId(normalizedClientId, movement);
+        if (updated) {
+          return res.json(serializeIOMovement(updated));
+        }
+      } catch (retryError) {
+        console.error('Error recuperando movimiento duplicado:', retryError);
+      }
+    }
+
     console.error(error);
     res.status(500).json({ message: 'Error al crear movimiento I/O' });
   }
@@ -95,6 +147,7 @@ const updateIOMovement = async (req, res) => {
       amount: existing.amount,
       date: existing.date,
       note: existing.note,
+      clientId: existing.clientId,
     };
 
     if (type !== undefined) {

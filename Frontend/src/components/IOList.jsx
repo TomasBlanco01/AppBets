@@ -248,16 +248,27 @@ const IOList = ({ movements, updateMovement, deleteMovement }) => {
                           </Typography>
                         </TableCell>
                         <TableCell align="center">
-                          <Chip
-                            label={mov.type === 'income' ? 'Ingreso' : 'Gasto'}
-                            color={mov.type === 'income' ? 'success' : 'error'}
-                            size="small"
-                            variant="outlined"
-                            icon={mov.type === 'income'
-                              ? <TrendingUpIcon sx={{ fontSize: '16px' }} />
-                              : <TrendingDownIcon sx={{ fontSize: '16px' }} />}
-                            sx={{ fontWeight: 600, px: 0.5 }}
-                          />
+                          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
+                            <Chip
+                              label={mov.type === 'income' ? 'Ingreso' : 'Gasto'}
+                              color={mov.type === 'income' ? 'success' : 'error'}
+                              size="small"
+                              variant="outlined"
+                              icon={mov.type === 'income'
+                                ? <TrendingUpIcon sx={{ fontSize: '16px' }} />
+                                : <TrendingDownIcon sx={{ fontSize: '16px' }} />}
+                              sx={{ fontWeight: 600, px: 0.5 }}
+                            />
+                            {mov.pending && (
+                              <Chip
+                                label="Pendiente"
+                                color="warning"
+                                size="small"
+                                variant="outlined"
+                                sx={{ height: 20, fontSize: '0.6rem', fontWeight: 700 }}
+                              />
+                            )}
+                          </Box>
                         </TableCell>
                         <TableCell align="center">
                           <Chip
