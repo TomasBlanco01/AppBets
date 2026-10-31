@@ -3,7 +3,6 @@ import HomeScreen from './components/HomeScreen'
 import Login from './components/Login'
 import { Typography, Container, Box, Button, IconButton, Tooltip, CircularProgress } from "@mui/material";
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
-import SavingsIcon from '@mui/icons-material/Savings';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import LogoutIcon from '@mui/icons-material/Logout';
@@ -72,13 +71,24 @@ const App = () => {
           </Tooltip>
           <Box
             onClick={() => setView('home')}
-            sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.5, mb: 0.5, cursor: 'pointer' }}
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: { xs: 1, sm: 1.5 },
+              mb: 0.5,
+              // En celular reservamos a ambos lados el ancho de los botones de
+              // la derecha, para que el título siga centrado sin pisarlos.
+              px: { xs: 12, sm: 0 },
+              cursor: 'pointer',
+            }}
           >
-            <AccountBalanceWalletIcon sx={{ fontSize: 40, color: 'primary.main' }} />
+            <AccountBalanceWalletIcon sx={{ fontSize: { xs: 30, sm: 40 }, color: 'primary.main' }} />
             <Typography
               variant="h4"
               align="center"
               sx={{
+                fontSize: { xs: '1.6rem', sm: '2.125rem' },
                 fontWeight: 900,
                 background: 'linear-gradient(135deg, #00e676 0%, #69f0ae 100%)',
                 backgroundClip: 'text',
@@ -89,7 +99,6 @@ const App = () => {
             >
               Ges.Eco
             </Typography>
-            <SavingsIcon sx={{ fontSize: 32, color: 'secondary.main' }} />
           </Box>
           <Typography
             variant="subtitle2"
