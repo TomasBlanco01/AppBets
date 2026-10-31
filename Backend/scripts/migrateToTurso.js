@@ -5,7 +5,7 @@ require('dotenv').config();
 const path = require('path');
 const fs = require('fs');
 const Database = require('better-sqlite3');
-const { ready, client } = require('../db/connection');
+const { ensureReady, client } = require('../db/connection');
 
 const LOCAL_DB_PATH = path.join(__dirname, '../db/appbets.db');
 
@@ -15,7 +15,7 @@ async function main() {
     return;
   }
 
-  await ready; // espera a que Turso tenga las tablas creadas
+  await ensureReady(); // espera a que Turso tenga las tablas creadas
 
   const local = new Database(LOCAL_DB_PATH, { readonly: true });
 

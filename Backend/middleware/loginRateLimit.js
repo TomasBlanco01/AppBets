@@ -1,12 +1,13 @@
-// Bloqueo simple por IP tras varios intentos fallidos de login. En memoria:
-// alcanza para una app de un solo usuario, no necesita persistencia externa.
-const attempts = new Map();
+const { get, run } = require('../db/helpers');
 
+// Bloqueo simple por IP tras varios intentos fallidos de login. Se guarda en
+// Turso porque en serverless cada petición puede caer en otra instancia y un
+// contador en memoria se perdería entre intentos.
 const MAX_ATTEMPTS = 5;
 const BLOCK_MS = 15 * 60 * 1000;
 
-const loginRateLimit = (req, res, next) => {
-  const entry = attempts.get(req.ip);
+const loginRateLimit = async (req, res, next) => {
+  const entry = await get('SELECT blockedUntil FROM login_attempts WHERE ip = ?', [req.ip]);
   const now = Date.now();
 
   if (entry?.blockedUntil && entry.blockedUntil > now) {
@@ -17,19 +18,20 @@ const loginRateLimit = (req, res, next) => {
   next();
 };
 
-const registerFailedAttempt = (ip) => {
-  const now = Date.now();
-  const entry = attempts.get(ip) || { count: 0 };
-  entry.count += 1;
-  if (entry.count >= MAX_ATTEMPTS) {
-    entry.blockedUntil = now + BLOCK_MS;
-    entry.count = 0;
-  }
-  attempts.set(ip, entry);
+const registerFailedAttempt = async (ip) => {
+  const entry = await get('SELECT count FROM login_attempts WHERE ip = ?', [ip]);
+  const count = (entry?.count || 0) + 1;
+  const blocked = count >= MAX_ATTEMPTS;
+
+  await run(
+    `INSERT INTO login_attempts (ip, count, blockedUntil) VALUES (?, ?, ?)
+     ON CONFLICT(ip) DO UPDATE SET count = excluded.count, blockedUntil = excluded.blockedUntil`,
+    [ip, blocked ? 0 : count, blocked ? Date.now() + BLOCK_MS : null]
+  );
 };
 
-const clearAttempts = (ip) => {
-  attempts.delete(ip);
+const clearAttempts = async (ip) => {
+  await run('DELETE FROM login_attempts WHERE ip = ?', [ip]);
 };
 
 module.exports = { loginRateLimit, registerFailedAttempt, clearAttempts };

@@ -67,6 +67,11 @@ async function createTables() {
         date TEXT NOT NULL,
         amount REAL NOT NULL CHECK(amount >= 0)
       )`,
+      `CREATE TABLE IF NOT EXISTS login_attempts (
+        ip TEXT PRIMARY KEY,
+        count INTEGER NOT NULL DEFAULT 0,
+        blockedUntil INTEGER
+      )`,
     ],
     'write'
   );
@@ -245,11 +250,22 @@ async function migrate() {
   await migrateBetsAddCashoutAmount();
 }
 
-const ready = migrate().catch((err) => {
-  console.error('Error inicializando la base de datos:', err);
-  throw err;
-});
+let readyPromise = null;
 
-// Todas las rutas deben esperar a `ready` (awaiteado una vez en index.js antes de
-// levantar el servidor) antes de usar `client`.
-module.exports = { client, ready };
+// Corre las migraciones una sola vez por proceso. Si fallan (p. ej. Turso no
+// responde en un arranque en frío), se descarta la promesa para que la próxima
+// petición reintente en vez de quedar rota hasta que se recicle la instancia.
+const ensureReady = () => {
+  if (!readyPromise) {
+    readyPromise = migrate().catch((err) => {
+      readyPromise = null;
+      console.error('Error inicializando la base de datos:', err);
+      throw err;
+    });
+  }
+  return readyPromise;
+};
+
+// Todas las rutas deben esperar a `ensureReady()` antes de usar `client`
+// (app.js lo hace con un middleware sobre /api).
+module.exports = { client, ensureReady };
