@@ -38,7 +38,7 @@ export default defineConfig({
     },
   },
   build: {
-    outDir: 'dist', // 👈 Render busca esta carpeta
+    outDir: 'dist', // 👈 Vercel publica esta carpeta (ver vercel.json)
     rollupOptions: {
       output: {
         // React y MUI cambian poco entre deploys: en chunks separados el

@@ -3,7 +3,7 @@ const { createClient } = require('@libsql/client');
 
 if (!process.env.TURSO_DATABASE_URL || !process.env.TURSO_AUTH_TOKEN) {
   throw new Error(
-    'Faltan TURSO_DATABASE_URL / TURSO_AUTH_TOKEN. Configuralas en Backend/.env (ver README) o en las variables de entorno del deploy.'
+    'Faltan TURSO_DATABASE_URL / TURSO_AUTH_TOKEN. Configuralas en Backend/.env (ver Backend/.env.example) o en las variables de entorno de Vercel.'
   );
 }
 

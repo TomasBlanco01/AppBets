@@ -1,8 +1,8 @@
 // Caché local y cola de salida para I/O.
 //
-// La app puede abrirse y cargarse sin que el backend esté despierto (Render
-// free duerme tras 15 minutos sin tráfico). Los movimientos creados mientras
-// tanto se guardan acá y se reintentan cuando el servidor vuelve.
+// La app puede abrirse y cargarse sin conexión o sin que el backend responda.
+// Los movimientos creados mientras tanto se guardan acá y se reintentan
+// cuando el servidor vuelve.
 
 const MOVEMENTS_KEY = 'geseco_io_cache_movements';
 const OUTBOX_KEY = 'geseco_io_outbox';

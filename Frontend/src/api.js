@@ -26,11 +26,10 @@ api.interceptors.request.use((config) => {
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-// Render (plan free) apaga el backend tras ~15 min sin uso y tarda hasta
-// ~50s en volver a levantar: las primeras peticiones pueden dar timeout o
-// 502/503 mientras arranca. Reintentamos con backoff (GET, no autenticación)
-// para que la app se recupere sola en vez de mostrar datos vacíos.
-const MAX_RETRIES = 6;
+// Ante un corte de red o un error 5xx puntual (p. ej. Turso tarda en
+// responder) reintentamos con backoff (solo GET, no login): 1s, 2s y 4s.
+// Si sigue fallando, la app muestra el aviso de sin conexión.
+const MAX_RETRIES = 3;
 const isRetryableError = (error) =>
   error.config?.method === 'get' &&
   !error.config.url.endsWith('/auth/login') &&

@@ -17,14 +17,14 @@ const exportRoutes = require('./routes/export');
 // serverless de Vercel (api/index.js en la raíz del repo).
 const app = express();
 
-// La app corre detrás de un proxy (Vercel/Render): sin esto, req.ip sería la IP
+// En Vercel la app corre detrás de un proxy: sin esto, req.ip sería la IP
 // interna del proxy y el rate-limit de login no distinguiría clientes.
 app.set('trust proxy', 1);
 
 app.use(cors());
 app.use(express.json());
 
-// Endpoint público y liviano para monitores de disponibilidad / keep-alive.
+// Endpoint público y liviano para comprobar que la API responde.
 // No requiere autenticación ni consulta la base de datos.
 app.get('/health', (req, res) => {
   res.set('Cache-Control', 'no-store');
