@@ -1,5 +1,10 @@
 const { all, get, run } = require('../db/helpers');
 const { generateRecurring } = require('./ioRecurringController');
+const { fillMissingRates } = require('./fxController');
+
+// Al cambiar la fecha se borra la cotización guardada (en SQLite el SET ve la
+// fila anterior) y se vuelve a completar al listar con la del nuevo día.
+const RESET_FX_IF_DATE_CHANGES = 'fxRate = CASE WHEN date = ? THEN fxRate END, fxCasa = CASE WHEN date = ? THEN fxCasa END';
 
 const VALID_TYPES = ['income', 'expense'];
 const DEFAULT_CATEGORY = {
@@ -32,8 +37,8 @@ const upsertByClientId = async (clientId, movement) => {
   if (!existing) return null;
 
   await run(
-    'UPDATE io_movements SET type = ?, amount = ?, date = ?, note = ?, category = ? WHERE clientId = ?',
-    [movement.type, movement.amount, movement.date, movement.note, movement.category, clientId]
+    `UPDATE io_movements SET ${RESET_FX_IF_DATE_CHANGES}, type = ?, amount = ?, date = ?, note = ?, category = ? WHERE clientId = ?`,
+    [movement.date, movement.date, movement.type, movement.amount, movement.date, movement.note, movement.category, clientId]
   );
 
   return { ...existing, ...movement };
@@ -43,6 +48,7 @@ const getIOMovements = async (req, res) => {
   try {
     // Antes de listar, crea los movimientos fijos que ya vencieron.
     await generateRecurring();
+    await fillMissingRates('io_movements');
 
     const { type } = req.query;
     let query = 'SELECT * FROM io_movements';
@@ -188,8 +194,8 @@ const updateIOMovement = async (req, res) => {
     }
 
     await run(
-      'UPDATE io_movements SET type = ?, category = ?, amount = ?, date = ?, note = ? WHERE id = ?',
-      [updated.type, updated.category, updated.amount, updated.date, updated.note, movementId]
+      `UPDATE io_movements SET ${RESET_FX_IF_DATE_CHANGES}, type = ?, category = ?, amount = ?, date = ?, note = ? WHERE id = ?`,
+      [updated.date, updated.date, updated.type, updated.category, updated.amount, updated.date, updated.note, movementId]
     );
 
     res.json({ id: movementId, ...updated });

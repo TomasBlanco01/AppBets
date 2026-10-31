@@ -87,6 +87,28 @@ test('fijos: valida los datos', async () => {
   assert.equal((await api.call('POST', '/api/io/recurring', { ...base, amount: 0 })).status, 400);
 });
 
+test('cotización: cada movimiento guarda la MEP de su fecha al cargarse', async () => {
+  const page = (await api.call('POST', '/api/pages', { name: 'Codere' })).body;
+  const created = (await api.call('POST', '/api/movements', {
+    pageId: page.id, type: 'withdrawal', amount: 50000, date: '2026-03-10', note: 'fx',
+  })).body;
+
+  const find = async () => (await api.call('GET', '/api/movements')).body.find((m) => m.id === created.id);
+  assert.deepEqual([(await find()).fxRate, (await find()).fxCasa], [1000, 'bolsa']);
+
+  // Cambiar el monto no toca la cotización; cambiar la fecha la recalcula.
+  await api.call('PUT', `/api/movements/${created.id}`, { amount: 60000 });
+  assert.equal((await find()).fxRate, 1000);
+  await api.call('PUT', `/api/movements/${created.id}`, { date: '2026-07-01' });
+  assert.equal((await find()).fxRate, 1200);
+});
+
+test('cotización: I/O también la guarda, y la de hoy es la cotización en vivo', async () => {
+  await api.call('POST', '/api/io', { type: 'income', amount: 3000, date: '2027-02-01', category: 'Sueldo', clientId: 'fx-io' });
+  const saved = (await api.call('GET', '/api/io')).body.find((m) => m.clientId === 'fx-io');
+  assert.deepEqual([saved.fxRate, saved.fxCasa], [1500, 'bolsa']);
+});
+
 test('cotizaciones: solo acepta blue, bolsa u oficial', async () => {
   assert.equal((await api.call('GET', '/api/fx/euro', undefined, { auth: false })).status, 400);
 });

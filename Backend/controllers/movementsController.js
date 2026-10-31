@@ -1,4 +1,9 @@
 const { all, get, run } = require('../db/helpers');
+const { fillMissingRates } = require('./fxController');
+
+// Al cambiar la fecha se borra la cotización guardada (en SQLite el SET ve la
+// fila anterior) y se vuelve a completar al listar con la del nuevo día.
+const RESET_FX_IF_DATE_CHANGES = 'fxRate = CASE WHEN date = ? THEN fxRate END, fxCasa = CASE WHEN date = ? THEN fxCasa END';
 
 const isValidAmount = (amount) => Number.isFinite(amount) && amount > 0;
 
@@ -14,8 +19,8 @@ const upsertByClientId = async (clientId, movement) => {
   if (!existing) return null;
 
   await run(
-    'UPDATE movements SET pageId = ?, type = ?, amount = ?, date = ?, note = ? WHERE clientId = ?',
-    [movement.pageId, movement.type, movement.amount, movement.date, movement.note, clientId]
+    `UPDATE movements SET ${RESET_FX_IF_DATE_CHANGES}, pageId = ?, type = ?, amount = ?, date = ?, note = ? WHERE clientId = ?`,
+    [movement.date, movement.date, movement.pageId, movement.type, movement.amount, movement.date, movement.note, clientId]
   );
 
   return { ...existing, ...movement };
@@ -23,6 +28,8 @@ const upsertByClientId = async (clientId, movement) => {
 
 const getMovements = async (req, res) => {
   try {
+    await fillMissingRates('movements');
+
     const { pageId } = req.query;
 
     let query = `
@@ -162,8 +169,8 @@ const updateMovement = async (req, res) => {
     }
 
     await run(
-      'UPDATE movements SET pageId = ?, type = ?, amount = ?, date = ?, note = ? WHERE id = ?',
-      [updated.pageId, updated.type, updated.amount, updated.date, updated.note, movementId]
+      `UPDATE movements SET ${RESET_FX_IF_DATE_CHANGES}, pageId = ?, type = ?, amount = ?, date = ?, note = ? WHERE id = ?`,
+      [updated.date, updated.date, updated.pageId, updated.type, updated.amount, updated.date, updated.note, movementId]
     );
 
     res.json({ id: movementId, ...updated });

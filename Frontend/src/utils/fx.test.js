@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { rateForDate, buildUsdConverter, latestRate } from './fx';
+import { rateForDate, buildUsdConverter, buildAmountOf, latestRate } from './fx';
 
 const history = [
   ['2026-10-01', 1000],
@@ -38,6 +38,26 @@ describe('buildUsdConverter', () => {
 
   it('sin cotización actual usa la última del histórico', () => {
     expect(buildUsdConverter({ history })(12000, '2026-10-30')).toBe(10);
+  });
+});
+
+describe('buildAmountOf', () => {
+  const rates = { history, current: { venta: 1250 } };
+
+  it('en pesos devuelve el monto tal cual', () => {
+    expect(buildAmountOf({ currency: 'ARS', casa: 'bolsa', rates })({ amount: 500 })).toBe(500);
+  });
+
+  it('usa la cotización guardada si es del tipo de dólar elegido', () => {
+    const amountOf = buildAmountOf({ currency: 'USD', casa: 'bolsa', rates });
+    // La guardada (2000) gana sobre el histórico (1100) aunque sea de la misma fecha.
+    expect(amountOf({ amount: 20000, date: '2026-10-02', fxRate: 2000, fxCasa: 'bolsa' })).toBe(10);
+  });
+
+  it('si la guardada es de otro tipo de dólar, o no hay, calcula con el histórico', () => {
+    const amountOf = buildAmountOf({ currency: 'USD', casa: 'blue', rates });
+    expect(amountOf({ amount: 11000, date: '2026-10-02', fxRate: 2000, fxCasa: 'bolsa' })).toBe(10);
+    expect(amountOf({ amount: 11000, date: '2026-10-02' })).toBe(10);
   });
 });
 

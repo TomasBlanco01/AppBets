@@ -30,6 +30,16 @@ export const buildUsdConverter = (rates) => {
   };
 };
 
+// Devuelve amountOf(movement) para sumar totales en la moneda elegida.
+// Si el movimiento tiene guardada la cotización del tipo de dólar elegido
+// (el backend guarda la MEP al cargarlo), se usa esa. Si no (otro tipo de
+// dólar, o un pendiente que todavía no llegó al servidor), se calcula.
+export const buildAmountOf = ({ currency, casa, rates }) => {
+  if (currency !== 'USD') return (m) => m.amount;
+  const toUsd = buildUsdConverter(rates);
+  return (m) => (m.fxRate > 0 && m.fxCasa === casa ? m.amount / m.fxRate : toUsd(m.amount, m.date));
+};
+
 export const latestRate = (rates) => (
   rates?.current?.venta || rates?.history?.[rates.history.length - 1]?.[1] || null
 );

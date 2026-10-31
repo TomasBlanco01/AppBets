@@ -92,6 +92,8 @@ const IOList = ({ movements, updateMovement, deleteMovement }) => {
       { header: 'Tipo', value: (m) => (m.type === 'income' ? 'Ingreso' : 'Gasto') },
       { header: 'Categoría', value: (m) => m.category || DEFAULT_IO_CATEGORY[m.type] },
       { header: 'Monto', value: (m) => formatCsvNumber(m.type === 'income' ? m.amount : -m.amount) },
+      { header: 'Cotización MEP', value: (m) => (m.fxRate ? formatCsvNumber(m.fxRate) : '') },
+      { header: 'Monto USD (MEP)', value: (m) => (m.fxRate ? formatCsvNumber((m.type === 'income' ? 1 : -1) * m.amount / m.fxRate) : '') },
       { header: 'Descripción', value: (m) => m.note || '' },
     ]);
     downloadCsv(`geseco-io-${todayAR()}.csv`, csv);

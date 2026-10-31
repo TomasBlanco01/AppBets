@@ -75,6 +75,8 @@ const MovementList = ({ movements, pages, updateMovement, deleteMovement, select
       { header: 'Casa', value: (m) => m.pageName },
       { header: 'Tipo', value: (m) => (m.type === 'deposit' ? 'Depósito' : 'Retiro') },
       { header: 'Monto', value: (m) => formatCsvNumber(m.type === 'withdrawal' ? m.amount : -m.amount) },
+      { header: 'Cotización MEP', value: (m) => (m.fxRate ? formatCsvNumber(m.fxRate) : '') },
+      { header: 'Monto USD (MEP)', value: (m) => (m.fxRate ? formatCsvNumber((m.type === 'withdrawal' ? 1 : -1) * m.amount / m.fxRate) : '') },
       { header: 'Nota', value: (m) => m.note || '' },
     ]);
     downloadCsv(`geseco-bets-${todayAR()}.csv`, csv);

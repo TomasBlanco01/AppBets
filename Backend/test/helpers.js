@@ -16,8 +16,15 @@ const setupTestEnv = () => {
   delete process.env.VERCEL;
 };
 
+// Cotizaciones MEP fijas para los tests (sin pedir nada a la API real).
+const TEST_RATES = {
+  history: [['2026-01-01', 1000], ['2026-06-01', 1200], ['2026-12-31', 1300]],
+  current: { venta: 1500 },
+};
+
 // Levanta la app como la invoca Vercel (un handler http) en un puerto libre.
 const startApi = async () => {
+  require('../controllers/fxController').primeRates('bolsa', TEST_RATES);
   const app = require('../app');
   const server = http.createServer(app);
   await new Promise((resolve) => server.listen(0, resolve));

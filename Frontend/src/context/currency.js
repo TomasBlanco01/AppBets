@@ -1,9 +1,12 @@
 import { createContext, useContext } from 'react';
 import { formatMoney, formatCompactMoney } from '../utils/money';
 
+// 'bolsa' es el dólar MEP: el predeterminado y el que se guarda en cada movimiento.
+export const DEFAULT_CASA = 'bolsa';
+
 export const CASAS = [
-  { value: 'blue', label: 'Blue' },
   { value: 'bolsa', label: 'MEP' },
+  { value: 'blue', label: 'Blue' },
   { value: 'oficial', label: 'Oficial' },
 ];
 
@@ -11,7 +14,7 @@ export const CASAS = [
 export const CurrencyContext = createContext({
   currency: 'ARS',
   requestedCurrency: 'ARS',
-  casa: 'blue',
+  casa: DEFAULT_CASA,
   rates: null,
   status: 'idle',
   setCurrency: () => {},

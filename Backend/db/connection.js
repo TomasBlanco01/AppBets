@@ -284,11 +284,27 @@ async function migrateMovementsAddClientId() {
   `);
 }
 
+// Migración única: cada movimiento guarda la cotización del dólar (MEP) con la
+// que se valúa en USD, así el valor queda fijo desde que se carga. Las filas
+// existentes se completan solas al listar (ver fillMissingRates).
+async function migrateAddFxRate() {
+  for (const table of ['movements', 'io_movements']) {
+    const columns = await client.execute(`PRAGMA table_info(${table})`);
+    if (!columns.rows.some((c) => c.name === 'fxRate')) {
+      await client.execute(`ALTER TABLE ${table} ADD COLUMN fxRate REAL`);
+    }
+    if (!columns.rows.some((c) => c.name === 'fxCasa')) {
+      await client.execute(`ALTER TABLE ${table} ADD COLUMN fxCasa TEXT`);
+    }
+  }
+}
+
 async function migrate() {
   await createTables();
   await migrateIOAddCategory();
   await migrateIOAddClientId();
   await migrateMovementsAddClientId();
+  await migrateAddFxRate();
   await migrateTipsterColumnToRelation();
   await migrateDropBetType();
   await migrateBetsAddSportAndHalfStatuses();

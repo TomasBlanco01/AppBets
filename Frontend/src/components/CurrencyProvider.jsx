@@ -1,10 +1,12 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import api from '../api';
-import { CurrencyContext } from '../context/currency';
-import { buildUsdConverter } from '../utils/fx';
+import { CurrencyContext, DEFAULT_CASA } from '../context/currency';
+import { buildAmountOf } from '../utils/fx';
 import { formatMoney, formatCompactMoney } from '../utils/money';
 
 const PREFS_KEY = 'geseco_currency_prefs';
+const PREFS_VERSION = 2;
+
 const ratesKey = (casa) => `geseco_fx_${casa}`;
 
 const readJson = (key, fallback) => {
@@ -24,11 +26,21 @@ const writeJson = (key, value) => {
   }
 };
 
+// v2: el dólar predeterminado pasó de Blue a MEP. Las preferencias guardadas
+// por la versión anterior traían Blue sin que nadie lo hubiera elegido.
+const loadPrefs = () => {
+  const saved = readJson(PREFS_KEY, null);
+  if (!saved || saved.v !== PREFS_VERSION) {
+    return { v: PREFS_VERSION, currency: saved?.currency || 'ARS', casa: DEFAULT_CASA };
+  }
+  return saved;
+};
+
 // Elige si los totales y gráficos se muestran en pesos o en dólares (y con qué
 // cotización). Las cotizaciones se guardan en localStorage para poder mostrar
 // USD también sin conexión.
 const CurrencyProvider = ({ children }) => {
-  const [prefs, setPrefs] = useState(() => readJson(PREFS_KEY, { currency: 'ARS', casa: 'blue' }));
+  const [prefs, setPrefs] = useState(loadPrefs);
   const [rates, setRates] = useState(() => readJson(ratesKey(prefs.casa), null));
   const [status, setStatus] = useState('idle');
 
@@ -68,7 +80,7 @@ const CurrencyProvider = ({ children }) => {
     const hasRates = Boolean(rates?.history?.length) && rates.casa === prefs.casa;
     // Sin cotizaciones (primera vez y sin conexión) seguimos mostrando pesos.
     const currency = prefs.currency === 'USD' && hasRates ? 'USD' : 'ARS';
-    const toUsd = currency === 'USD' ? buildUsdConverter(rates) : null;
+    const amountOf = buildAmountOf({ currency, casa: prefs.casa, rates });
 
     return {
       currency,
@@ -78,7 +90,7 @@ const CurrencyProvider = ({ children }) => {
       status,
       setCurrency,
       setCasa,
-      amountOf: (movement) => (toUsd ? toUsd(movement.amount, movement.date) : movement.amount),
+      amountOf,
       format: (n) => formatMoney(n, currency),
       formatCompact: (n) => formatCompactMoney(n, currency),
     };
